@@ -1,11 +1,13 @@
 import bcrypt from "bcrypt";
 import { Prisma } from "@prisma/client";
 import { userRepository } from "../repositories/user.repository";
-import { signAuthToken } from "../utils/jwt";
+import { sessionService } from "./session.service";
 import { AppError } from "../utils/appError";
+import { UserRole } from "@prisma/client";
+import { createTemporaryToken } from "../utils/tokens";
 
 export class AuthService {
-  async register(email: string, password: string) {
+  async register(email: string, password: string, role: UserRole) {
     const existingUser = await userRepository.findByEmail(email);
 
     if (existingUser) {
@@ -19,12 +21,16 @@ export class AuthService {
     const passwordHash = await bcrypt.hash(password, 12);
 
     try {
-      const user = await userRepository.create(email, passwordHash);
-      const token = signAuthToken(user.id);
+      const user = await userRepository.create(email, passwordHash, role);
+      const tokens = await sessionService.issue(user.id);
 
-      return { user, token };
+      return {
+        user,
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+      };
     } catch (error) {
-      // Protect against two simultaneous registrations for the same email.
+      // Handle simultaneous registrations with the same email.
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === "P2002"
@@ -43,7 +49,6 @@ export class AuthService {
   async login(email: string, password: string) {
     const user = await userRepository.findByEmail(email);
 
-    // Use the same response for unknown emails and incorrect passwords.
     if (!user) {
       throw new AppError(
         401,
@@ -62,25 +67,46 @@ export class AuthService {
       );
     }
 
-    if (user.totpEnabled) {
-      // We will implement this flow in the 2FA phase.
-      throw new AppError(
-        501,
-        "TWO_FACTOR_NOT_IMPLEMENTED",
-        "Two-factor login is not implemented yet",
-      );
+    const safeUser = {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      totpEnabled: user.totpEnabled,
+    };
+
+    // Owners must complete 2FA before receiving a full session.
+    if (user.role === "OWNER") {
+      if (!user.totpEnabled) {
+        return {
+          flow: "setup_required" as const,
+          user: safeUser,
+          temporaryToken: createTemporaryToken(user.id, "owner_2fa_setup"),
+        };
+      }
+
+      if (!user.totpSecretEnc) {
+        throw new AppError(
+          500,
+          "TWO_FACTOR_CONFIGURATION_ERROR",
+          "Owner two-factor configuration requires recovery",
+        );
+      }
+
+      return {
+        flow: "two_factor_required" as const,
+        user: safeUser,
+        temporaryToken: createTemporaryToken(user.id, "owner_2fa_challenge"),
+      };
     }
 
-    const {
-      passwordHash: _,
-      totpSecretEnc: __,
-      recoveryCodesHash: ___,
-      ...safeUser
-    } = user;
+    // Customers and other non-owner roles use normal login.
+    const tokens = await sessionService.issue(user.id);
 
     return {
+      flow: "authenticated" as const,
       user: safeUser,
-      token: signAuthToken(user.id),
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
     };
   }
 
