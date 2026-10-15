@@ -15,16 +15,17 @@ enum UserRole {
 }
 
 model User {
-  id                String   @id @default(uuid()) @db.Uuid
-  email             String   @unique @db.VarChar(254)
-  passwordHash      String   @map("password_hash")
-  role              UserRole @default(CUSTOMER)
-  totpSecretEnc     String?  @map("totp_secret_enc")
-  totpEnabled       Boolean  @default(false) @map("totp_enabled")
-  recoveryCodesHash String[] @default([]) @map("recovery_codes_hash")
-  sessions UserSession[]
-  createdAt         DateTime @default(now()) @map("created_at")
-  updatedAt         DateTime @updatedAt @map("updated_at")
+  id                String        @id @default(uuid()) @db.Uuid
+  email             String        @unique @db.VarChar(254)
+  passwordHash      String        @map("password_hash")
+  role              UserRole      @default(CUSTOMER)
+  totpSecretEnc     String?       @map("totp_secret_enc")
+  totpEnabled       Boolean       @default(false) @map("totp_enabled")
+  recoveryCodesHash String[]      @default([]) @map("recovery_codes_hash")
+  sessions          UserSession[]
+  salons            Salon[]
+  createdAt         DateTime      @default(now()) @map("created_at")
+  updatedAt         DateTime      @updatedAt @map("updated_at")
 
   @@map("users")
 }
@@ -42,4 +43,26 @@ model UserSession {
   @@index([userId])
   @@index([expiresAt])
   @@map("user_sessions")
+}
+
+model Salon {
+  id          String   @id @default(uuid()) @db.Uuid
+  ownerId     String   @db.Uuid @map("owner_id")
+  name        String   @db.VarChar(120)
+  phone       String   @db.VarChar(20)
+  description String?  @db.VarChar(1000)
+  addressLine1 String  @db.VarChar(200) @map("address_line_1")
+  addressLine2 String? @db.VarChar(200) @map("address_line_2")
+  city        String   @db.VarChar(100)
+  state       String   @db.VarChar(100)
+  postalCode  String   @db.VarChar(12) @map("postal_code")
+  country     String   @default("India") @db.VarChar(80)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  owner User @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@index([ownerId, createdAt])
+  @@index([city, state])
+  @@map("salons")
 }
