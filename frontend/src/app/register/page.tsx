@@ -92,7 +92,7 @@ export default function RegisterPage() {
       ) {
         router.replace("/setup-authenticator");
       } else {
-        router.replace("/customer/dashboard");
+        router.replace("/customer/salons");
       }
     } catch (error) {
       const message = getApiError(error);

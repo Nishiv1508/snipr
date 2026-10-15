@@ -9,6 +9,8 @@ import {
   publishSalon,
   unpublishSalon,
   updateSalon,
+  getPublicSalons,
+  getPublicSalonById,
   type CreateSalonInput,
   type UpdateSalonInput,
 } from "@/lib/api/salon.api";
@@ -17,6 +19,11 @@ export const salonKeys = {
   all: ["salons"] as const,
   mine: () => [...salonKeys.all, "mine"] as const,
   detail: (id: string) => [...salonKeys.all, "detail", id] as const,
+};
+
+export const publicSalonKeys = {
+  all: ["public-salons"] as const,
+  detail: (id: string) => ["public-salons", id] as const,
 };
 
 export function useMySalons() {
@@ -94,5 +101,20 @@ export function useUnpublishSalon() {
         queryKey: salonKeys.mine(),
       });
     },
+  });
+}
+
+export function usePublicSalons() {
+  return useQuery({
+    queryKey: publicSalonKeys.all,
+    queryFn: getPublicSalons,
+  });
+}
+
+export function usePublicSalon(id: string) {
+  return useQuery({
+    queryKey: publicSalonKeys.detail(id),
+    queryFn: () => getPublicSalonById(id),
+    enabled: Boolean(id),
   });
 }
