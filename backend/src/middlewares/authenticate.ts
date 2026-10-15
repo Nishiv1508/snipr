@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { verifyAuthToken } from "../utils/jwt";
+import { verifyToken } from "../utils/tokens";
 
 declare global {
   namespace Express {
@@ -9,8 +9,12 @@ declare global {
   }
 }
 
-export function authenticate(req: Request, res: Response, next: NextFunction) {
-  const token = req.cookies?.snipr_token;
+export function authenticate(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): void {
+  const token = req.cookies?.snipr_access;
 
   if (!token) {
     res.status(401).json({
@@ -23,8 +27,9 @@ export function authenticate(req: Request, res: Response, next: NextFunction) {
   }
 
   try {
-    const payload = verifyAuthToken(token);
-    req.userId = payload.userId;
+    const userId = verifyToken(token, "access");
+
+    req.userId = userId;
     next();
   } catch {
     res.status(401).json({
