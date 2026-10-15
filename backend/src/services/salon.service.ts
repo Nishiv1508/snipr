@@ -15,6 +15,14 @@ export class SalonService {
     if (user.role !== UserRole.OWNER) {
       throw new AppError(403, "OWNER_ONLY", "Only salon owner accounts can manage salons");
     }
+
+    if (!user.totpEnabled) {
+      throw new AppError(
+        403,
+        "OWNER_TWO_FACTOR_REQUIRED",
+        "Complete authenticator two-factor setup before registering a salon",
+      );
+    }
   }
 
   async create(userId: string, input: CreateSalonInput) {
