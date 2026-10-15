@@ -126,7 +126,6 @@ export default function EditSalonPage() {
   if (salonQuery.isPending) {
     return (
       <div className="min-h-screen bg-muted/20">
-        <OwnerNavbar />
         <main className="mx-auto max-w-4xl space-y-6 px-5 py-8 sm:px-8 sm:py-12">
           <Skeleton className="h-10 w-44" />
           <Skeleton className="h-16 w-2/3" />
@@ -141,7 +140,6 @@ export default function EditSalonPage() {
   if (salonQuery.isError || !salonQuery.data) {
     return (
       <div className="min-h-screen bg-muted/20">
-        <OwnerNavbar />
         <main className="mx-auto max-w-4xl px-5 py-8 sm:px-8 sm:py-12">
           <Link
             href={DASHBOARD_ROUTE}
@@ -345,8 +343,6 @@ function EditSalonForm({ salon }: { salon: Salon }) {
 
   return (
     <div className="min-h-screen bg-muted/20">
-      <OwnerNavbar />
-
       <main className="mx-auto max-w-4xl px-5 py-8 sm:px-8 sm:py-12">
         <Link
           href={DASHBOARD_ROUTE}

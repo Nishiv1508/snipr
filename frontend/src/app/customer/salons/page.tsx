@@ -5,13 +5,11 @@ import { Store } from "lucide-react";
 import { usePublicSalons } from "@/hooks/use-salons";
 import { getApiError } from "@/lib/api";
 
-import CustomerNavbar from "@/components/customers/CustomerNavbar";
 import SalonCard from "@/components/customers/SalonCard";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Footer } from "@/components/footer";
 
 export default function CustomerSalonsPage() {
   const salonsQuery = usePublicSalons();
@@ -19,8 +17,6 @@ export default function CustomerSalonsPage() {
 
   return (
     <main className="min-h-screen bg-muted/20">
-      <CustomerNavbar />
-
       <div className="mx-auto max-w-7xl px-5 py-8 sm:px-8 sm:py-12">
         <header className="mb-8">
           <p className="mb-2 text-sm font-medium text-primary">
@@ -100,8 +96,6 @@ export default function CustomerSalonsPage() {
           </>
         )}
       </div>
-
-      <Footer />
     </main>
   );
 }

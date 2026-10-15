@@ -7,7 +7,6 @@ import Link from "next/link";
 import { ArrowLeft, Plus, Trash2, Store, Scissors, Clock } from "lucide-react";
 import { toast } from "sonner";
 
-import { OwnerNavbar } from "@/components/owner/navbar";
 import { getApiError } from "@/lib/api";
 import { useCreateSalon } from "@/hooks/use-salons";
 
@@ -274,8 +273,6 @@ export default function CreateSalonPage() {
 
   return (
     <div className="min-h-screen bg-muted/20">
-      <OwnerNavbar />
-
       <main className="mx-auto max-w-4xl px-5 py-8 sm:px-8 sm:py-12">
         {/* Back button */}
         <Link

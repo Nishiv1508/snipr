@@ -295,8 +295,6 @@ export default function CustomerSalonDetailPage() {
           </Button>
         </div>
       </div>
-
-      <Footer />
     </main>
   );
 }

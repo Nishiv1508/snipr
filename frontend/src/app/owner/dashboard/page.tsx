@@ -1,9 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Plus, RefreshCw, Store } from "lucide-react";
+import { RefreshCw, Store } from "lucide-react";
 
 import { getApiError } from "@/lib/api";
 import { OwnerNavbar } from "@/components/owner/navbar";
@@ -18,8 +16,6 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function OwnerDashboardPage() {
-  const router = useRouter();
-
   const currentUser = useCurrentUser();
   const salonsQuery = useMySalons();
 
@@ -27,12 +23,6 @@ export default function OwnerDashboardPage() {
   const salons = salonsQuery.data ?? [];
 
   const isWrongRole = Boolean(user && user.role !== "OWNER");
-
-  useEffect(() => {
-    if (user && user.role !== "OWNER") {
-      router.replace("/customer/dashboard");
-    }
-  }, [user, router]);
 
   const stats = [
     {
@@ -55,8 +45,6 @@ export default function OwnerDashboardPage() {
 
   return (
     <div className="min-h-screen bg-muted/20">
-      <OwnerNavbar />
-
       <main className="mx-auto max-w-7xl px-5 py-8 sm:px-8 sm:py-12">
         {isWrongRole ? (
           <Card>
