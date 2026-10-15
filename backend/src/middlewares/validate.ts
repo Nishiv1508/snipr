@@ -10,9 +10,9 @@ type RequestSchema = z.ZodType<{
 export function validate<T extends RequestSchema>(schema: T): RequestHandler {
   return (req, res, next) => {
     const result = schema.safeParse({
-      body: req.body,
+      body: req.body ?? {},
       params: req.params,
-      query: req.query,
+      query: req.query ?? {},
     });
 
     if (!result.success) {

@@ -14,6 +14,22 @@ enum UserRole {
   ADMIN
 }
 
+enum SalonStatus {
+  DRAFT
+  PUBLISHED
+  UNPUBLISHED
+}
+
+enum WeekDay {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
 model User {
   id                String   @id @default(uuid()) @db.Uuid
   email             String   @unique @db.VarChar(254)
@@ -22,6 +38,7 @@ model User {
   totpSecretEnc     String?  @map("totp_secret_enc")
   totpEnabled       Boolean  @default(false) @map("totp_enabled")
   recoveryCodesHash String[] @default([]) @map("recovery_codes_hash")
+  salons Salon[]
   sessions UserSession[]
   createdAt         DateTime @default(now()) @map("created_at")
   updatedAt         DateTime @updatedAt @map("updated_at")
@@ -42,4 +59,61 @@ model UserSession {
   @@index([userId])
   @@index([expiresAt])
   @@map("user_sessions")
+}
+
+model Salon {
+  id            String      @id @default(uuid()) @db.Uuid
+  ownerId       String      @db.Uuid @map("owner_id")
+  name          String      @db.VarChar(150)
+  description   String?     @db.Text
+  imageUrl      String?     @db.Text @map("image_url")
+  address       String      @db.Text
+  city          String      @db.VarChar(100)
+  state         String      @db.VarChar(100)
+  postalCode    String?     @db.VarChar(20) @map("postal_code")
+  phone         String?     @db.VarChar(20)
+  googleMapsUrl String?     @db.Text @map("google_maps_url")
+  status        SalonStatus @default(DRAFT)
+  publishedAt   DateTime?   @map("published_at")
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+
+  owner    User           @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  services SalonService[]
+  hours    SalonHours[]
+
+  @@index([ownerId, createdAt])
+  @@index([status, city])
+  @@map("salons")
+}
+
+model SalonService {
+  id          String   @id @default(uuid()) @db.Uuid
+  salonId     String   @db.Uuid @map("salon_id")
+  name        String   @db.VarChar(120)
+  description String?  @db.Text
+  durationMin Int      @map("duration_min")
+  price       Decimal  @db.Decimal(10, 2)
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  salon Salon @relation(fields: [salonId], references: [id], onDelete: Cascade)
+
+  @@index([salonId, isActive])
+  @@map("salon_services")
+}
+
+model SalonHours {
+  id        String   @id @default(uuid()) @db.Uuid
+  salonId   String   @db.Uuid @map("salon_id")
+  day       WeekDay
+  opensAt   String?  @db.VarChar(5) @map("opens_at")
+  closesAt  String?  @db.VarChar(5) @map("closes_at")
+  isClosed  Boolean  @default(false) @map("is_closed")
+
+  salon Salon @relation(fields: [salonId], references: [id], onDelete: Cascade)
+
+  @@unique([salonId, day])
+  @@map("salon_hours")
 }

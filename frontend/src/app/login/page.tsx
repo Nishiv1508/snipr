@@ -72,7 +72,7 @@ export default function LoginPage() {
       } else if (result.user?.role === "OWNER") {
         router.replace("/owner/dashboard");
       } else {
-        router.replace("/customer/dashboard");
+        router.replace("/customer/salons");
       }
     } catch (error) {
       setServerError(getApiError(error));
