@@ -21,7 +21,7 @@ import { useCreateSalon } from "@/hooks/use-salons";
 
 const schema = z.object({
   name: z.string().trim().min(2, "Enter at least 2 characters.").max(120),
-  phone: z.string().trim().min(7, "Enter a valid phone number.").max(20).regex(/^[+()\\d\\s.-]+$/, "Enter a valid phone number."),
+  phone: z.string().trim().min(7, "Enter a valid phone number.").max(20).regex(/^[+()\d\s.-]+$/, "Enter a valid phone number."),
   description: z.string().trim().max(1000).optional(),
   addressLine1: z.string().trim().min(3, "Enter the street address.").max(200),
   addressLine2: z.string().trim().max(200).optional(),
