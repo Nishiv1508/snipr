@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Scissors, LogOut } from "lucide-react";
 
 import { useLogout } from "@/hooks/use-auth";
@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 
 export default function CustomerNavbar() {
   const router = useRouter();
+  const pathname = usePathname();
   const logout = useLogout();
 
   const handleLogout = () => {
@@ -19,10 +20,15 @@ export default function CustomerNavbar() {
     });
   };
 
+  const isBookingsPage = pathname === "/customer/bookings";
+
   return (
     <nav className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5 sm:px-8">
-        <Link href="/customer/salons" className="flex items-center gap-2">
+        <Link
+          href="/customer/salons"
+          className="flex shrink-0 items-center gap-2"
+        >
           <div className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
             <Scissors className="size-5" />
           </div>
@@ -30,23 +36,39 @@ export default function CustomerNavbar() {
           <span className="text-lg font-semibold tracking-tight">Snipr</span>
         </Link>
 
-        <div className="flex items-center gap-3">
-          <Link
-            href="/customer/salons"
-            className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+        <div className="flex items-center gap-1 sm:gap-3">
+          <Button variant="ghost" size="sm" className="gap-2">
+            <Link href="/customer/salons">
+              <span className="hidden sm:inline">Explore salons</span>
+              <span className="sm:hidden">Explore</span>
+            </Link>
+          </Button>
+
+          <Button
+            variant={isBookingsPage ? "secondary" : "ghost"}
+            size="sm"
+            className="gap-2"
           >
-            Explore salons
-          </Link>
+            <Link
+              href="/customer/bookings"
+              aria-label="My bookings"
+              aria-current={isBookingsPage ? "page" : undefined}
+            >
+              <span className="hidden sm:inline">My Bookings</span>
+            </Link>
+          </Button>
 
           <Button
             variant="ghost"
             size="sm"
             onClick={handleLogout}
             disabled={logout.isPending}
-            className="flex items-center gap-2"
+            className="gap-2"
           >
             <LogOut className="size-4" />
-            {logout.isPending ? "Logging out..." : "Logout"}
+            <span className="hidden sm:inline">
+              {logout.isPending ? "Logging out..." : "Logout"}
+            </span>
           </Button>
         </div>
       </div>
