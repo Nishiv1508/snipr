@@ -100,16 +100,16 @@ model Salon {
 }
 
 model SalonService {
-  id          String    @id @default(uuid()) @db.Uuid
-  salonId     String    @map("salon_id") @db.Uuid
-  name        String    @db.VarChar(120)
-  description String?   @db.Text
-  durationMin Int       @map("duration_min")
-  price       Decimal   @db.Decimal(10, 2)
-  bookings    Booking[]
-  isActive    Boolean   @default(true) @map("is_active")
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @updatedAt @map("updated_at")
+  id           String        @id @default(uuid()) @db.Uuid
+  salonId      String        @map("salon_id") @db.Uuid
+  name         String        @db.VarChar(120)
+  description  String?       @db.Text
+  durationMin  Int           @map("duration_min")
+  price        Decimal       @db.Decimal(10, 2)
+  bookingItems BookingItem[]
+  isActive     Boolean       @default(true) @map("is_active")
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
 
   salon Salon @relation(fields: [salonId], references: [id], onDelete: Cascade)
 
@@ -142,8 +142,9 @@ model BookingSlot {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  salon    Salon     @relation(fields: [salonId], references: [id], onDelete: Cascade)
-  bookings Booking[]
+  salon        Salon  @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  serviceItems BookingItem[]
+  reservations BookingSlotReservation[]
 
   @@unique([salonId, startsAt])
   @@index([salonId, startsAt])
@@ -151,29 +152,57 @@ model BookingSlot {
 }
 
 model Booking {
-  id         String        @id @default(uuid()) @db.Uuid
-  reference  String        @unique @db.VarChar(30)
-  customerId String        @map("customer_id") @db.Uuid
-  slotId     String        @map("slot_id") @db.Uuid
-  serviceId  String        @map("service_id") @db.Uuid
-  status     BookingStatus @default(CONFIRMED)
-
-  serviceName        String  @map("service_name") @db.VarChar(120)
-  servicePrice       Decimal @map("service_price") @db.Decimal(10, 2)
-  serviceDurationMin Int     @map("service_duration_min")
-
-  ticketKeyHash String @unique @map("ticket_key_hash")
-  ticketKeyEnc  String @map("ticket_key_enc") @db.Text
+  id            String        @id @default(uuid()) @db.Uuid
+  reference     String        @unique @db.VarChar(30)
+  customerId    String        @map("customer_id") @db.Uuid
+  status        BookingStatus @default(CONFIRMED)
+  ticketKeyHash String        @unique @map("ticket_key_hash")
+  ticketKeyEnc  String        @map("ticket_key_enc") @db.Text
 
   cancelledAt DateTime? @map("cancelled_at")
   createdAt   DateTime  @default(now()) @map("created_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")
 
-  customer User         @relation(fields: [customerId], references: [id], onDelete: Restrict)
-  slot     BookingSlot  @relation(fields: [slotId], references: [id], onDelete: Restrict)
-  service  SalonService @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+  customer User          @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  items    BookingItem[]
+  slotReservations BookingSlotReservation[]
 
   @@index([customerId, status, createdAt])
-  @@index([slotId, status])
   @@map("bookings")
+}
+
+model BookingItem {
+  id                 String   @id @default(uuid()) @db.Uuid
+  bookingId          String   @map("booking_id") @db.Uuid
+  slotId             String   @map("slot_id") @db.Uuid
+  serviceId          String   @map("service_id") @db.Uuid
+  serviceName        String   @map("service_name") @db.VarChar(120)
+  servicePrice       Decimal  @map("service_price") @db.Decimal(10, 2)
+  serviceDurationMin Int      @map("service_duration_min")
+  position           Int
+  startsAt           DateTime @map("starts_at")
+  endsAt             DateTime @map("ends_at")
+  createdAt          DateTime @default(now()) @map("created_at")
+
+  booking Booking      @relation(fields: [bookingId], references: [id], onDelete: Restrict)
+  slot    BookingSlot  @relation(fields: [slotId], references: [id], onDelete: Restrict)
+  service SalonService @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+
+  @@unique([bookingId, position])
+  @@index([slotId])
+  @@index([serviceId])
+  @@map("booking_items")
+}
+
+model BookingSlotReservation {
+  bookingId String   @map("booking_id") @db.Uuid
+  slotId    String   @map("slot_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+
+  booking Booking     @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  slot    BookingSlot @relation(fields: [slotId], references: [id], onDelete: Restrict)
+
+  @@id([bookingId, slotId])
+  @@index([slotId])
+  @@map("booking_slot_reservations")
 }

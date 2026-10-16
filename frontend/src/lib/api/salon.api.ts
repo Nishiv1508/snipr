@@ -54,15 +54,12 @@ export interface Salon {
   address: string;
   city: string;
   state: string;
-  postalCode?: string | null;
-  phone?: string | null;
-  googleMapsUrl?: string | null;
-  status: SalonStatus;
-  publishedAt?: string | null;
-  createdAt: string;
+  status: "DRAFT" | "PUBLISHED" | "UNPUBLISHED";
   updatedAt: string;
   services?: SalonService[];
-  hours?: SalonHoursInput[];
+
+  // Default number of bookings allowed per time slot
+  defaultBookingCapacity?: number;
 }
 
 export interface PublicSalonService {
@@ -156,4 +153,15 @@ export async function getPublicSalons(): Promise<PublicSalon[]> {
 export async function getPublicSalonById(id: string): Promise<PublicSalon> {
   const response = await api.get<{ data: PublicSalon }>(`/public/salons/${id}`);
   return response.data.data;
+}
+
+export async function updateSalonCapacity(
+  salonId: string,
+  defaultBookingCapacity: number,
+) {
+  const response = await api.patch(`/salons/${salonId}/capacity`, {
+    defaultBookingCapacity,
+  });
+
+  return response.data;
 }

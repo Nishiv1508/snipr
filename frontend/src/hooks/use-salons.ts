@@ -13,6 +13,7 @@ import {
   getPublicSalonById,
   type CreateSalonInput,
   type UpdateSalonInput,
+  updateSalonCapacity,
 } from "@/lib/api/salon.api";
 
 export const salonKeys = {
@@ -116,5 +117,23 @@ export function usePublicSalon(id: string) {
     queryKey: publicSalonKeys.detail(id),
     queryFn: () => getPublicSalonById(id),
     enabled: Boolean(id),
+  });
+}
+
+export function useUpdateSalonCapacity() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      salonId,
+      defaultBookingCapacity,
+    }: {
+      salonId: string;
+      defaultBookingCapacity: number;
+    }) => updateSalonCapacity(salonId, defaultBookingCapacity),
+
+    onSuccess: async () => {
+      await queryClient.invalidateQueries();
+    },
   });
 }

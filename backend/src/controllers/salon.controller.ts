@@ -101,3 +101,21 @@ export async function unpublishSalon(
     next(error);
   }
 }
+
+export async function updateSalonCapacity(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  try {
+    const salon = await salonService.updateCapacity(
+      ownerId(req),
+      getSalonId(req),
+      req.body.defaultBookingCapacity,
+    );
+
+    res.json({ data: salon });
+  } catch (error) {
+    next(error);
+  }
+}

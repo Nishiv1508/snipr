@@ -4,12 +4,11 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import {
   ArrowLeft,
+  CalendarDays,
   Clock,
-  ExternalLink,
   MapPin,
   Phone,
   Scissors,
-  Store,
 } from "lucide-react";
 
 import { usePublicSalon } from "@/hooks/use-salons";
@@ -27,7 +26,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Footer } from "@/components/footer";
+import BookingForm from "@/components/customers/booking-form";
 
 const DAYS: { day: WeekDay; label: string }[] = [
   { day: "MONDAY", label: "Monday" },
@@ -181,22 +180,36 @@ export default function CustomerSalonDetailPage() {
         </Card>
 
         {/* Services and opening hours */}
-        <div className="mt-8 grid items-start gap-6 lg:grid-cols-2">
-          <Card>
-            <CardHeader>
+
+        {/* Services */}
+        <section id="services" className="mt-10 scroll-mt-24">
+          <div className="mb-5">
+            <p className="text-sm font-medium text-violet-600">
+              Find your style
+            </p>
+            <h2 className="mt-1 text-2xl font-semibold tracking-tight sm:text-3xl">
+              Our services
+            </h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Explore the treatments available at {salon.name}.
+            </p>
+          </div>
+
+          <Card className="overflow-hidden rounded-2xl">
+            <CardHeader className="border-b bg-muted/20">
               <CardTitle className="flex items-center gap-2">
-                <Scissors className="size-5" />
-                Services
+                <Scissors className="size-5 text-violet-600" />
+                Available services
               </CardTitle>
               <CardDescription>
-                {services.length} available service
-                {services.length === 1 ? "" : "s"} at this salon
+                {services.length} service{services.length === 1 ? "" : "s"}{" "}
+                available
               </CardDescription>
             </CardHeader>
 
-            <CardContent>
+            <CardContent className="p-0">
               {services.length === 0 ? (
-                <p className="py-6 text-sm text-muted-foreground">
+                <p className="p-6 text-sm text-muted-foreground">
                   No services are currently available.
                 </p>
               ) : (
@@ -204,7 +217,7 @@ export default function CustomerSalonDetailPage() {
                   {services.map((service) => (
                     <div
                       key={service.id}
-                      className="flex items-start justify-between gap-4 py-4 first:pt-0 last:pb-0"
+                      className="flex items-center justify-between gap-4 p-5 transition-colors hover:bg-muted/20 sm:px-6"
                     >
                       <div className="min-w-0">
                         <h3 className="font-medium">{service.name}</h3>
@@ -221,7 +234,7 @@ export default function CustomerSalonDetailPage() {
                         </p>
                       </div>
 
-                      <p className="shrink-0 text-lg font-semibold tabular-nums">
+                      <p className="shrink-0 text-base font-semibold tabular-nums sm:text-lg">
                         ₹{Number(service.price).toLocaleString("en-IN")}
                       </p>
                     </div>
@@ -230,38 +243,71 @@ export default function CustomerSalonDetailPage() {
               )}
             </CardContent>
           </Card>
+        </section>
 
-          <Card>
-            <CardHeader>
+        {/* Booking */}
+        <section id="book-appointment" className="mt-10 scroll-mt-24">
+          <div className="mb-5">
+            <p className="text-sm font-medium text-violet-600">
+              Your next appointment
+            </p>
+            <h2 className="mt-1 text-2xl font-semibold tracking-tight sm:text-3xl">
+              Book your visit
+            </h2>
+            <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+              Choose your services and a convenient starting time. Your
+              appointment will be scheduled according to the duration of each
+              selected service.
+            </p>
+          </div>
+
+          <div className="mx-auto max-w-4xl">
+            <BookingForm salonId={salon.id} services={services} />
+          </div>
+        </section>
+
+        {/* Opening hours */}
+        <section id="opening-hours" className="mt-10 scroll-mt-24">
+          <div className="mb-5">
+            <p className="text-sm font-medium text-violet-600">
+              Plan your visit
+            </p>
+            <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+              Opening hours
+            </h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Weekly business hours for {salon.name}.
+            </p>
+          </div>
+
+          <Card className="rounded-2xl">
+            <CardHeader className="border-b bg-muted/20">
               <CardTitle className="flex items-center gap-2">
-                <Clock className="size-5" />
-                Opening hours
+                <Clock className="size-5 text-violet-600" />
+                Weekly schedule
               </CardTitle>
               <CardDescription>
-                Weekly business hours for {salon.name}
+                Check when the salon is open before choosing your appointment.
               </CardDescription>
             </CardHeader>
 
-            <CardContent>
-              <div className="divide-y">
+            <CardContent className="p-5 sm:p-6">
+              <div className="grid gap-x-10 sm:grid-cols-2">
                 {DAYS.map(({ day, label }) => {
                   const item = hoursByDay.get(day);
-
                   const isClosed = !item || item.isClosed;
 
                   return (
                     <div
                       key={day}
-                      className="flex items-center justify-between gap-4 py-3 first:pt-0 last:pb-0"
+                      className="flex items-center justify-between gap-4 border-b py-3 last:border-b-0 sm:nth-last-2:border-b-0"
                     >
-                      <span className="font-medium">{label}</span>
+                      <span className="text-sm font-medium">{label}</span>
 
                       {isClosed ? (
-                        <span className="text-sm font-medium text-muted-foreground">
-                          Closed
-                        </span>
+                        <Badge variant="secondary">Closed</Badge>
                       ) : item?.opensAt && item?.closesAt ? (
-                        <span className="text-right text-sm tabular-nums">
+                        <span className="text-right text-sm tabular-nums text-muted-foreground">
                           {formatTime(item.opensAt)} –{" "}
                           {formatTime(item.closesAt)}
                         </span>
@@ -276,22 +322,24 @@ export default function CustomerSalonDetailPage() {
               </div>
             </CardContent>
           </Card>
-        </div>
+        </section>
 
-        <div className="mt-8 flex items-center gap-3 rounded-xl border bg-card p-5">
-          <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300">
-            <Store className="size-5" />
-          </div>
+        <div className="mt-6 flex flex-wrap gap-3">
+          <Button
+            className="bg-violet-600 hover:bg-violet-700"
+            onClick={() => {
+              document.getElementById("book-appointment")?.scrollIntoView({
+                behavior: "smooth",
+                block: "start",
+              });
+            }}
+          >
+            <CalendarDays className="mr-2 size-4" />
+            Book an appointment
+          </Button>
 
-          <div>
-            <h2 className="font-medium">Discover your next look</h2>
-            <p className="text-sm text-muted-foreground">
-              Explore other salons and compare their services.
-            </p>
-          </div>
-
-          <Button variant="outline" className="ml-auto shrink-0">
-            <Link href="/customer/salons">Browse</Link>
+          <Button variant="outline">
+            <Link href="/customer/salons">Explore other salons</Link>
           </Button>
         </div>
       </div>

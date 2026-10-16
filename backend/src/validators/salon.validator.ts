@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+const uuidSchema = z.string().uuid();
+
 const timeSchema = z
   .string()
   .regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Time must use HH:mm format");
@@ -117,6 +119,20 @@ export const updateSalonRequestSchema = z.object({
   body: updateSalonSchema.shape.body,
   params: z.object({
     id: z.string().uuid(),
+  }),
+  query: z.record(z.string(), z.unknown()).optional(),
+});
+
+export const updateSalonCapacitySchema = z.object({
+  body: z.object({
+    defaultBookingCapacity: z
+      .number()
+      .int()
+      .min(1, "Capacity must be at least 1")
+      .max(500, "Capacity cannot exceed 500"),
+  }),
+  params: z.object({
+    id: uuidSchema,
   }),
   query: z.record(z.string(), z.unknown()).optional(),
 });
