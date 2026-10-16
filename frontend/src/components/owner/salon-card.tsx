@@ -1,12 +1,17 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
-import { MapPin, Pencil, Globe, GlobeLock, Scissors } from "lucide-react";
+import { MapPin, Globe, GlobeLock, Scissors, Settings2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { getApiError } from "@/lib/api";
 import type { Salon } from "@/lib/api/salon.api";
-import { usePublishSalon, useUnpublishSalon } from "@/hooks/use-salons";
+import {
+  usePublishSalon,
+  useUnpublishSalon,
+  useUpdateSalonCapacity,
+} from "@/hooks/use-salons";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -18,6 +23,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface SalonCardProps {
   salon: Salon;
@@ -41,8 +48,15 @@ const statusLabels = {
 export function SalonCard({ salon }: SalonCardProps) {
   const publish = usePublishSalon();
   const unpublish = useUnpublishSalon();
+  const updateCapacity = useUpdateSalonCapacity();
+
+  const [showCapacityForm, setShowCapacityForm] = useState(false);
+  const [capacity, setCapacity] = useState(
+    String(salon.defaultBookingCapacity ?? 1),
+  );
 
   const isPending = publish.isPending || unpublish.isPending;
+  const isCapacityPending = updateCapacity.isPending;
 
   async function handlePublish() {
     try {
@@ -57,6 +71,33 @@ export function SalonCard({ salon }: SalonCardProps) {
     try {
       await unpublish.mutateAsync(salon.id);
       toast.success("Salon unpublished successfully.");
+    } catch (error) {
+      toast.error(getApiError(error));
+    }
+  }
+
+  async function handleUpdateCapacity(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const parsedCapacity = Number(capacity);
+
+    if (
+      !Number.isInteger(parsedCapacity) ||
+      parsedCapacity < 1 ||
+      parsedCapacity > 500
+    ) {
+      toast.error("Capacity must be a whole number between 1 and 500.");
+      return;
+    }
+
+    try {
+      await updateCapacity.mutateAsync({
+        salonId: salon.id,
+        defaultBookingCapacity: parsedCapacity,
+      });
+
+      toast.success("Slot capacity updated successfully.");
+      setShowCapacityForm(false);
     } catch (error) {
       toast.error(getApiError(error));
     }
@@ -90,6 +131,7 @@ export function SalonCard({ salon }: SalonCardProps) {
         </div>
 
         <CardTitle className="line-clamp-1">{salon.name}</CardTitle>
+
         <CardDescription className="flex items-start gap-2">
           <MapPin className="mt-0.5 size-4 shrink-0" />
           <span>
@@ -107,15 +149,91 @@ export function SalonCard({ salon }: SalonCardProps) {
           <Scissors className="size-4" />
           {salon.services?.length ?? 0} services
         </div>
+
+        {/* Slot capacity editor */}
+        <div className="mt-5 rounded-xl border bg-muted/20 p-4">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-medium">Slot capacity</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {salon.defaultBookingCapacity ?? 1} bookings per slot
+              </p>
+            </div>
+
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => setShowCapacityForm((current) => !current)}
+            >
+              <Settings2 className="mr-2 size-4" />
+              {showCapacityForm ? "Close" : "Update"}
+            </Button>
+          </div>
+
+          {showCapacityForm && (
+            <form className="mt-4 space-y-3" onSubmit={handleUpdateCapacity}>
+              <div className="space-y-2">
+                <Label htmlFor={`capacity-${salon.id}`}>
+                  Bookings per time slot
+                </Label>
+
+                <Input
+                  id={`capacity-${salon.id}`}
+                  type="number"
+                  min={1}
+                  max={500}
+                  step={1}
+                  required
+                  value={capacity}
+                  onChange={(event) => setCapacity(event.target.value)}
+                  disabled={isCapacityPending}
+                />
+
+                <p className="text-xs text-muted-foreground">
+                  Enter a whole number from 1 to 500.
+                </p>
+              </div>
+
+              <div className="flex gap-2">
+                <Button
+                  type="submit"
+                  size="sm"
+                  className="flex-1"
+                  disabled={isCapacityPending}
+                >
+                  {isCapacityPending ? "Updating..." : "Save capacity"}
+                </Button>
+
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={isCapacityPending}
+                  onClick={() => {
+                    setCapacity(String(salon.defaultBookingCapacity ?? 1));
+                    setShowCapacityForm(false);
+                  }}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          )}
+        </div>
       </CardContent>
 
       <CardFooter className="flex flex-wrap gap-2 border-t pt-4">
-        <Button variant="outline" className="flex-1">
-          <Link href={`/owner/salons/${salon.id}/edit`}>Edit</Link>
-        </Button>
+        <Link
+          href={`/owner/salons/${salon.id}/edit`}
+          className="inline-flex h-9 flex-1 items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
+        >
+          Edit
+        </Link>
 
         {salon.status === "PUBLISHED" ? (
           <Button
+            type="button"
             variant="secondary"
             onClick={handleUnpublish}
             disabled={isPending}
@@ -126,6 +244,7 @@ export function SalonCard({ salon }: SalonCardProps) {
           </Button>
         ) : (
           <Button
+            type="button"
             onClick={handlePublish}
             disabled={isPending}
             className="flex-1"
