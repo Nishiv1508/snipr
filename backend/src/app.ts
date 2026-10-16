@@ -6,6 +6,10 @@ import { env } from "./config/env";
 import authRoutes from "./routes/auth.routes";
 import salonRoutes from "./routes/salon.routes";
 import publicSalonRoutes from "./routes/public-salon.routes";
+import {
+  customerRouter as bookingRoutes,
+  ownerRouter as ownerBookingRoutes,
+} from "./routes/booking.routes";
 import { errorHandler } from "./middlewares/errorHandler";
 
 const app = express();
@@ -31,6 +35,8 @@ app.get("/health", (_req, res) => {
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/salons", salonRoutes);
 app.use("/api/v1/public/salons", publicSalonRoutes);
+app.use("/api/v1/bookings", bookingRoutes);
+app.use("/api/v1/owner", ownerBookingRoutes);
 
 app.use((_req, res) => {
   res.status(404).json({

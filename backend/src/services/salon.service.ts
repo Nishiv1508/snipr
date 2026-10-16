@@ -213,4 +213,54 @@ export const salonService = {
 
     return salon;
   },
+
+  async updateCapacity(ownerId: string, id: string, capacity: number) {
+    const now = new Date();
+
+    return prisma.$transaction(async (tx) => {
+      const salon = await tx.salon.findFirst({
+        where: { id, ownerId },
+        select: { id: true },
+      });
+
+      if (!salon) {
+        throw new AppError(404, "SALON_NOT_FOUND", "Salon not found");
+      }
+
+      // Update only future slots that can safely support the new capacity.
+      const updatedSlots = await tx.bookingSlot.updateMany({
+        where: {
+          salonId: id,
+          startsAt: { gt: now },
+          bookedCount: { lte: capacity },
+        },
+        data: { capacity },
+      });
+
+      const futureSlotCount = await tx.bookingSlot.count({
+        where: {
+          salonId: id,
+          startsAt: { gt: now },
+        },
+      });
+
+      if (updatedSlots.count !== futureSlotCount) {
+        throw new AppError(
+          409,
+          "CAPACITY_BELOW_BOOKINGS",
+          "Capacity cannot be lower than the number of existing bookings in a future time slot",
+        );
+      }
+
+      return tx.salon.update({
+        where: { id },
+        data: { defaultBookingCapacity: capacity },
+        select: {
+          id: true,
+          name: true,
+          defaultBookingCapacity: true,
+        },
+      });
+    });
+  },
 };
