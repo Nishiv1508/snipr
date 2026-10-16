@@ -57,9 +57,30 @@ export interface Salon {
   status: "DRAFT" | "PUBLISHED" | "UNPUBLISHED";
   updatedAt: string;
   services?: SalonService[];
+  postalCode?: string | null;
+  phone?: string | null;
+  googleMapsUrl?: string | null;
+
+  hours?: SalonHours[];
 
   // Default number of bookings allowed per time slot
   defaultBookingCapacity?: number;
+}
+
+export interface SalonHours {
+  id?: string;
+  salonId?: string;
+  day:
+    | "MONDAY"
+    | "TUESDAY"
+    | "WEDNESDAY"
+    | "THURSDAY"
+    | "FRIDAY"
+    | "SATURDAY"
+    | "SUNDAY";
+  opensAt: string | null;
+  closesAt: string | null;
+  isClosed: boolean;
 }
 
 export interface PublicSalonService {
