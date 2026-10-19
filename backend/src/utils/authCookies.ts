@@ -9,7 +9,8 @@ export const CHALLENGE_COOKIE = "snipr_2fa_challenge";
 const baseOptions = {
   httpOnly: true,
   secure: env.NODE_ENV === "production",
-  sameSite: "lax" as const,
+  sameSite:
+    env.NODE_ENV === "production" ? ("none" as const) : ("lax" as const),
   path: "/",
   ...(env.COOKIE_DOMAIN ? { domain: env.COOKIE_DOMAIN } : {}),
 };
