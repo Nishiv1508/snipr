@@ -13,7 +13,7 @@ import {
 import { getApiError } from "@/lib/api";
 import { SalonCard } from "@/components/owner/salon-card";
 import { useCurrentUser } from "@/hooks/use-auth";
-import { useMySalons } from "@/hooks/use-salons";
+import { useMySalons, usePublicSalons } from "@/hooks/use-salons";
 import { useOwnerBookings } from "@/hooks/use-bookings";
 
 import { Button } from "@/components/ui/button";
@@ -25,10 +25,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 export default function OwnerDashboardPage() {
   const currentUser = useCurrentUser();
   const salonsQuery = useMySalons();
+  const publicSalonsQuery = usePublicSalons();
   const bookingsQuery = useOwnerBookings();
 
   const user = currentUser.data;
   const salons = salonsQuery.data ?? [];
+  const publicSalons = publicSalonsQuery.data ?? [];
   const bookings = bookingsQuery.data ?? [];
 
   const isWrongRole = Boolean(user && user.role !== "OWNER");
@@ -125,13 +127,20 @@ export default function OwnerDashboardPage() {
                   variant="outline"
                   onClick={() => {
                     void salonsQuery.refetch();
+                    void publicSalonsQuery.refetch();
                     void bookingsQuery.refetch();
                   }}
-                  disabled={salonsQuery.isFetching || bookingsQuery.isFetching}
+                  disabled={
+                    salonsQuery.isFetching ||
+                    publicSalonsQuery.isFetching ||
+                    bookingsQuery.isFetching
+                  }
                 >
                   <RefreshCw
                     className={`size-4 ${
-                      salonsQuery.isFetching || bookingsQuery.isFetching
+                      salonsQuery.isFetching ||
+                      publicSalonsQuery.isFetching ||
+                      bookingsQuery.isFetching
                         ? "animate-spin"
                         : ""
                     }`}
@@ -336,9 +345,31 @@ export default function OwnerDashboardPage() {
                 </div>
 
                 <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                  {salons.map((salon) => (
-                    <SalonCard key={salon.id} salon={salon} />
-                  ))}
+                  {salons.map((salon) => {
+                    const publicSalon = publicSalons.find(
+                      (item) => item.id === salon.id,
+                    );
+
+                    return (
+                      <SalonCard
+                        key={salon.id}
+                        salon={salon}
+                        ratingSummary={
+                          publicSalon
+                            ? {
+                                averageRating: publicSalon.averageRating,
+                                ratingCount: publicSalon.ratingCount,
+                              }
+                            : undefined
+                        }
+                        ratingsLoading={
+                          publicSalonsQuery.isPending ||
+                          publicSalonsQuery.isFetching
+                        }
+                        ratingsError={publicSalonsQuery.isError}
+                      />
+                    );
+                  })}
                 </div>
               </section>
             )}

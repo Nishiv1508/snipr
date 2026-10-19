@@ -2,7 +2,14 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { MapPin, Globe, GlobeLock, Scissors, Settings2 } from "lucide-react";
+import {
+  MapPin,
+  Globe,
+  GlobeLock,
+  Scissors,
+  Settings2,
+  Star,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { getApiError } from "@/lib/api";
@@ -28,6 +35,12 @@ import { Label } from "@/components/ui/label";
 
 interface SalonCardProps {
   salon: Salon;
+  ratingSummary?: {
+    averageRating: number | null;
+    ratingCount: number;
+  };
+  ratingsLoading?: boolean;
+  ratingsError?: boolean;
 }
 
 const statusStyles = {
@@ -45,7 +58,12 @@ const statusLabels = {
   UNPUBLISHED: "Unpublished",
 };
 
-export function SalonCard({ salon }: SalonCardProps) {
+export function SalonCard({
+  salon,
+  ratingSummary,
+  ratingsLoading = false,
+  ratingsError = false,
+}: SalonCardProps) {
   const publish = usePublishSalon();
   const unpublish = useUnpublishSalon();
   const updateCapacity = useUpdateSalonCapacity();
@@ -148,6 +166,37 @@ export function SalonCard({ salon }: SalonCardProps) {
         <div className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
           <Scissors className="size-4" />
           {salon.services?.length ?? 0} services
+        </div>
+
+        {/* Public customer rating summary */}
+        <div className="mt-3 flex items-center justify-between gap-3 rounded-lg border bg-amber-50/60 px-3 py-2.5 dark:bg-amber-950/20">
+          <div className="flex items-center gap-2 text-sm font-medium">
+            <Star className="size-4 fill-amber-400 text-amber-400" />
+            Customer rating
+          </div>
+          <div className="text-right text-sm">
+            {salon.status !== "PUBLISHED" ? (
+              <span className="text-muted-foreground">
+                Shown when published
+              </span>
+            ) : ratingsLoading ? (
+              <span className="text-muted-foreground">Loading…</span>
+            ) : ratingsError ? (
+              <span className="text-muted-foreground">Unavailable</span>
+            ) : ratingSummary &&
+              ratingSummary.ratingCount > 0 &&
+              ratingSummary.averageRating !== null ? (
+              <span className="font-semibold tabular-nums">
+                {ratingSummary.averageRating.toFixed(1)}
+                <span className="ml-1 font-normal text-muted-foreground">
+                  ({ratingSummary.ratingCount}{" "}
+                  {ratingSummary.ratingCount === 1 ? "rating" : "ratings"})
+                </span>
+              </span>
+            ) : (
+              <span className="text-muted-foreground">No ratings yet</span>
+            )}
+          </div>
         </div>
 
         {/* Slot capacity editor */}
