@@ -2,8 +2,6 @@ import { Prisma, SalonStatus, WeekDay } from "@prisma/client";
 import { prisma } from "../config/db";
 import { AppError } from "../utils/appError";
 
-const days = Object.values(WeekDay);
-
 function validateHours(
   hours: {
     day: WeekDay;
@@ -94,21 +92,74 @@ export const salonService = {
       });
 
       if (services !== undefined) {
-        await tx.salonService.deleteMany({
+        const existingServices = await tx.salonService.findMany({
           where: { salonId: id },
+          select: { id: true },
         });
 
-        if (services.length) {
-          await tx.salonService.createMany({
-            data: services.map((service: any) => ({
-              salonId: id,
-              name: service.name,
-              description: service.description,
-              durationMin: service.durationMin,
-              price: new Prisma.Decimal(service.price),
-              isActive: service.isActive ?? true,
-            })),
+        const incomingIds = services
+          .filter((service: any) => service.id)
+          .map((service: any) => service.id as string);
+
+        // Reject IDs that don't belong to this salon.
+        const validIds = existingServices.map((service) => service.id);
+
+        if (
+          incomingIds.some((serviceId: string) => !validIds.includes(serviceId))
+        ) {
+          throw new AppError(
+            400,
+            "INVALID_SERVICE",
+            "One or more services do not belong to this salon",
+          );
+        }
+
+        // Update existing services and create new ones.
+        for (const service of services) {
+          const data = {
+            name: service.name,
+            description: service.description ?? null,
+            durationMin: service.durationMin,
+            price: new Prisma.Decimal(service.price),
+            isActive: service.isActive ?? true,
+          };
+
+          if (service.id) {
+            await tx.salonService.update({
+              where: { id: service.id },
+              data,
+            });
+          } else {
+            await tx.salonService.create({
+              data: {
+                salonId: id,
+                ...data,
+              },
+            });
+          }
+        }
+
+        // Handle services removed from the submitted list.
+        const removedServices = existingServices.filter(
+          (service) => !incomingIds.includes(service.id),
+        );
+
+        for (const service of removedServices) {
+          const bookingItemCount = await tx.bookingItem.count({
+            where: { serviceId: service.id },
           });
+
+          if (bookingItemCount > 0) {
+            // Keep historical booking references intact.
+            await tx.salonService.update({
+              where: { id: service.id },
+              data: { isActive: false },
+            });
+          } else {
+            await tx.salonService.delete({
+              where: { id: service.id },
+            });
+          }
         }
       }
 
@@ -185,7 +236,7 @@ export const salonService = {
   },
 
   async listPublic(city?: string) {
-    return prisma.salon.findMany({
+    const salons = await prisma.salon.findMany({
       where: {
         status: SalonStatus.PUBLISHED,
         ...(city ? { city: { equals: city, mode: "insensitive" } } : {}),
@@ -195,6 +246,29 @@ export const salonService = {
         hours: true,
       },
       orderBy: { publishedAt: "desc" },
+    });
+
+    if (salons.length === 0) return salons;
+
+    const ratingSummaries = await prisma.salonRating.groupBy({
+      by: ["salonId"],
+      where: { salonId: { in: salons.map((salon) => salon.id) } },
+      _avg: { rating: true },
+      _count: { _all: true },
+    });
+
+    const summaryBySalonId = new Map(
+      ratingSummaries.map((summary) => [summary.salonId, summary]),
+    );
+
+    return salons.map((salon) => {
+      const summary = summaryBySalonId.get(salon.id);
+
+      return {
+        ...salon,
+        averageRating: summary?._avg.rating ?? null,
+        ratingCount: summary?._count._all ?? 0,
+      };
     });
   },
 
@@ -211,7 +285,17 @@ export const salonService = {
       throw new AppError(404, "SALON_NOT_FOUND", "Salon not found");
     }
 
-    return salon;
+    const ratingSummary = await prisma.salonRating.aggregate({
+      where: { salonId: salon.id },
+      _avg: { rating: true },
+      _count: { _all: true },
+    });
+
+    return {
+      ...salon,
+      averageRating: ratingSummary._avg.rating ?? null,
+      ratingCount: ratingSummary._count._all,
+    };
   },
 
   async updateCapacity(ownerId: string, id: string, capacity: number) {

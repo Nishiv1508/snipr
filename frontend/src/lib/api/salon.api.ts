@@ -116,6 +116,10 @@ export interface PublicSalon {
   status: "PUBLISHED";
   services: PublicSalonService[];
   hours: PublicSalonHours[];
+  /** Average across customer ratings; null when there are no ratings. */
+  averageRating: number | null;
+  /** Number of customers who have rated this salon. */
+  ratingCount: number;
 }
 
 function unwrap<T>(data: unknown): T {

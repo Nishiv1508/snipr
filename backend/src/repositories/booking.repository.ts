@@ -1,4 +1,4 @@
-import { Prisma } from "@prisma/client";
+import { Prisma, BookingStatus } from "@prisma/client";
 import { prisma } from "../config/db";
 
 class BookingTransactionError extends Error {
@@ -522,6 +522,13 @@ export const bookingRepository = {
           },
         },
       },
+    });
+  },
+
+  async updateBookingStatus(bookingId: string, status: BookingStatus) {
+    return prisma.booking.update({
+      where: { id: bookingId },
+      data: { status },
     });
   },
 };

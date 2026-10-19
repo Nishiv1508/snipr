@@ -6,6 +6,7 @@ import { env } from "./config/env";
 import authRoutes from "./routes/auth.routes";
 import salonRoutes from "./routes/salon.routes";
 import publicSalonRoutes from "./routes/public-salon.routes";
+import ratingRoutes from "./routes/rating.routes";
 import {
   customerRouter as bookingRoutes,
   ownerRouter as ownerBookingRoutes,
@@ -35,6 +36,7 @@ app.get("/health", (_req, res) => {
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/salons", salonRoutes);
 app.use("/api/v1/public/salons", publicSalonRoutes);
+app.use("/api/v1/ratings", ratingRoutes);
 app.use("/api/v1/bookings", bookingRoutes);
 app.use("/api/v1/owner", ownerBookingRoutes);
 

@@ -5,6 +5,7 @@ import { ArrowRight, MapPin, Scissors } from "lucide-react";
 
 import type { PublicSalon } from "@/lib/api/salon.api";
 import { Card, CardContent } from "@/components/ui/card";
+import StarRating from "@/components/customers/StarRating";
 
 interface SalonCardProps {
   salon: PublicSalon;
@@ -38,6 +39,34 @@ export default function SalonCard({ salon }: SalonCardProps) {
           <h2 className="line-clamp-1 text-xl font-semibold tracking-tight">
             {salon.name}
           </h2>
+
+          <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1">
+            <StarRating
+              value={
+                salon.averageRating == null
+                  ? 0
+                  : Math.round(salon.averageRating)
+              }
+              size="sm"
+              label={
+                salon.averageRating == null
+                  ? "No customer ratings yet"
+                  : `${salon.averageRating.toFixed(1)} out of 5 stars`
+              }
+            />
+            {salon.ratingCount > 0 ? (
+              <span className="text-sm text-muted-foreground">
+                <span className="font-medium text-foreground">
+                  {salon.averageRating?.toFixed(1)}
+                </span>{" "}
+                ({salon.ratingCount} rating{salon.ratingCount === 1 ? "" : "s"})
+              </span>
+            ) : (
+              <span className="text-sm text-muted-foreground">
+                No ratings yet
+              </span>
+            )}
+          </div>
 
           <p className="mt-2 flex items-start gap-2 text-sm text-muted-foreground">
             <MapPin className="mt-0.5 size-4 shrink-0" />

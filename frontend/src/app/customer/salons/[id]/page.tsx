@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { useState } from "react";
 import {
   ArrowLeft,
   CalendarDays,
@@ -9,10 +10,13 @@ import {
   MapPin,
   Phone,
   Scissors,
+  Star,
 } from "lucide-react";
 
 import { usePublicSalon } from "@/hooks/use-salons";
+import { useMySalonRating, useSubmitSalonRating } from "@/hooks/use-ratings";
 import { getApiError } from "@/lib/api";
+import { toast } from "sonner";
 import type { WeekDay } from "@/lib/api/salon.api";
 
 import { Button } from "@/components/ui/button";
@@ -27,6 +31,7 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import BookingForm from "@/components/customers/booking-form";
+import StarRating from "@/components/customers/StarRating";
 
 const DAYS: { day: WeekDay; label: string }[] = [
   { day: "MONDAY", label: "Monday" },
@@ -49,6 +54,9 @@ function formatTime(value: string): string {
 export default function CustomerSalonDetailPage() {
   const params = useParams<{ id: string }>();
   const salonQuery = usePublicSalon(params.id);
+  const myRatingQuery = useMySalonRating(params.id);
+  const submitRatingMutation = useSubmitSalonRating();
+  const [selectedRating, setSelectedRating] = useState<number | null>(null);
 
   if (salonQuery.isPending) {
     return (
@@ -140,6 +148,35 @@ export default function CustomerSalonDetailPage() {
               {salon.name}
             </h1>
 
+            <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1">
+              <StarRating
+                value={
+                  salon.averageRating == null
+                    ? 0
+                    : Math.round(salon.averageRating)
+                }
+                size="md"
+                label={
+                  salon.averageRating == null
+                    ? "No customer ratings yet"
+                    : `${salon.averageRating.toFixed(1)} out of 5 stars`
+                }
+              />
+              {salon.ratingCount > 0 ? (
+                <span className="text-sm text-muted-foreground">
+                  <span className="font-semibold text-foreground">
+                    {salon.averageRating?.toFixed(1)} / 5
+                  </span>{" "}
+                  · {salon.ratingCount} rating
+                  {salon.ratingCount === 1 ? "" : "s"}
+                </span>
+              ) : (
+                <span className="text-sm text-muted-foreground">
+                  Be the first to rate this salon
+                </span>
+              )}
+            </div>
+
             <p className="mt-3 max-w-3xl text-muted-foreground">
               {salon.description ||
                 "Explore the services available at this salon."}
@@ -178,6 +215,101 @@ export default function CustomerSalonDetailPage() {
             )}
           </CardContent>
         </Card>
+
+        {/* Customer rating */}
+        <section id="salon-rating" className="mt-8 scroll-mt-24">
+          <Card className="rounded-2xl">
+            <CardHeader className="border-b bg-muted/20">
+              <CardTitle className="flex items-center gap-2">
+                <Star className="size-5 fill-amber-400 text-amber-400" />
+                Rate your experience
+              </CardTitle>
+              <CardDescription>
+                Share a rating from 1 to 5 stars. You can update your rating
+                later.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4 p-5 sm:p-6">
+              {myRatingQuery.isPending ? (
+                <Skeleton className="h-8 w-48" />
+              ) : myRatingQuery.isError ? (
+                <Alert variant="destructive">
+                  <AlertDescription>
+                    {getApiError(myRatingQuery.error)}
+                  </AlertDescription>
+                </Alert>
+              ) : (
+                <>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <StarRating
+                      value={selectedRating ?? myRatingQuery.data?.rating ?? 0}
+                      onChange={setSelectedRating}
+                      size="lg"
+                      disabled={submitRatingMutation.isPending}
+                      label="Choose your rating from one to five stars"
+                    />
+                    <span className="text-sm text-muted-foreground">
+                      {(selectedRating ?? myRatingQuery.data?.rating)
+                        ? `${selectedRating ?? myRatingQuery.data?.rating} of 5 selected`
+                        : "Select a star rating"}
+                    </span>
+                  </div>
+
+                  {myRatingQuery.data && selectedRating === null && (
+                    <p className="text-sm text-muted-foreground">
+                      Your current rating: {myRatingQuery.data.rating}/5
+                    </p>
+                  )}
+
+                  {submitRatingMutation.isError && (
+                    <Alert variant="destructive">
+                      <AlertDescription>
+                        {getApiError(submitRatingMutation.error)}
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
+                  <p className="text-sm text-muted-foreground">
+                    Ratings are available to customers who have completed a
+                    booking at this salon.
+                  </p>
+
+                  <Button
+                    type="button"
+                    className="bg-violet-600 hover:bg-violet-700"
+                    disabled={
+                      !selectedRating ||
+                      submitRatingMutation.isPending ||
+                      selectedRating === myRatingQuery.data?.rating
+                    }
+                    onClick={() => {
+                      if (!selectedRating) return;
+
+                      submitRatingMutation.mutate(
+                        { salonId: salon.id, rating: selectedRating },
+                        {
+                          onSuccess: () => {
+                            toast.success("Your salon rating has been saved.");
+                            setSelectedRating(null);
+                          },
+                          onError: (error) => {
+                            toast.error(getApiError(error));
+                          },
+                        },
+                      );
+                    }}
+                  >
+                    {submitRatingMutation.isPending
+                      ? "Saving rating..."
+                      : myRatingQuery.data
+                        ? "Update rating"
+                        : "Submit rating"}
+                  </Button>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        </section>
 
         {/* Services and opening hours */}
 

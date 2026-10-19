@@ -1,40 +1,17 @@
 import { Router } from "express";
 import rateLimit from "express-rate-limit";
-import { z } from "zod";
 import { authController } from "../controllers/auth.controller";
 import { authenticate } from "../middlewares/authenticate";
 import { validate } from "../middlewares/validate";
-import { registerSchema, loginSchema } from "../validators/auth.validator";
+import {
+  registerSchema,
+  loginSchema,
+  enable2FASchema,
+  verifyLogin2FASchema,
+  disable2FASchema,
+} from "../validators/auth.validator";
 
 const router = Router();
-
-const enable2FASchema = z.object({
-  body: z.object({
-    code: z.string().regex(/^\d{6}$/, "Enter a valid six-digit code"),
-  }),
-});
-
-const verifyLogin2FASchema = z.object({
-  body: z
-    .object({
-      code: z
-        .string()
-        .regex(/^\d{6}$/)
-        .optional(),
-      recoveryCode: z.string().trim().min(1).max(32).optional(),
-    })
-    .refine(
-      (data) => Boolean(data.code) !== Boolean(data.recoveryCode),
-      "Provide either an authenticator code or a recovery code",
-    ),
-});
-
-const disable2FASchema = z.object({
-  body: z.object({
-    password: z.string().min(1),
-    code: z.string().regex(/^\d{6}$/),
-  }),
-});
 
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
