@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "src/server.ts": {
+      "includeFiles": "node_modules/pdfkit/js/data/**"
+    }
+  }
+}
