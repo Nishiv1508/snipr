@@ -48,6 +48,7 @@ model User {
   salons            Salon[]
   bookings          Booking[]
   sessions          UserSession[]
+  salonRatings      SalonRating[]
   createdAt         DateTime      @default(now()) @map("created_at")
   updatedAt         DateTime      @updatedAt @map("updated_at")
 
@@ -89,6 +90,7 @@ model Salon {
   owner    User           @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   services SalonService[]
   hours    SalonHours[]
+  ratings  SalonRating[]
 
   timezone               String        @default("Asia/Kolkata") @db.VarChar(50)
   defaultBookingCapacity Int           @default(50) @map("default_booking_capacity")
@@ -205,4 +207,21 @@ model BookingSlotReservation {
   @@id([bookingId, slotId])
   @@index([slotId])
   @@map("booking_slot_reservations")
+}
+
+model SalonRating {
+  id         String   @id @default(uuid()) @db.Uuid
+  salonId    String   @map("salon_id") @db.Uuid
+  customerId String   @map("customer_id") @db.Uuid
+  rating     Int
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  salon    Salon @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  customer User  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@unique([salonId, customerId])
+  @@index([salonId])
+  @@index([customerId])
+  @@map("salon_ratings")
 }

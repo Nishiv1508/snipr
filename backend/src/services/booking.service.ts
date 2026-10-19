@@ -383,12 +383,18 @@ export const bookingService = {
       return fail(400, "INVALID_TICKET_KEY", "Ticket key is invalid");
     }
 
+    // Mark the booking as completed only after successful verification.
+    const updatedBooking = await bookingRepository.updateBookingStatus(
+      bookingId,
+      "COMPLETED",
+    );
+
     return {
       valid: true,
       booking: {
-        id: booking.id,
-        reference: booking.reference,
-        status: booking.status,
+        id: updatedBooking.id,
+        reference: updatedBooking.reference,
+        status: updatedBooking.status,
         customerEmail: booking.customer.email,
         services: booking.items.map((item) => ({
           serviceName: item.serviceName,

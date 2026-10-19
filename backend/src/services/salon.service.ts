@@ -185,7 +185,7 @@ export const salonService = {
   },
 
   async listPublic(city?: string) {
-    return prisma.salon.findMany({
+    const salons = await prisma.salon.findMany({
       where: {
         status: SalonStatus.PUBLISHED,
         ...(city ? { city: { equals: city, mode: "insensitive" } } : {}),
@@ -195,6 +195,29 @@ export const salonService = {
         hours: true,
       },
       orderBy: { publishedAt: "desc" },
+    });
+
+    if (salons.length === 0) return salons;
+
+    const ratingSummaries = await prisma.salonRating.groupBy({
+      by: ["salonId"],
+      where: { salonId: { in: salons.map((salon) => salon.id) } },
+      _avg: { rating: true },
+      _count: { _all: true },
+    });
+
+    const summaryBySalonId = new Map(
+      ratingSummaries.map((summary) => [summary.salonId, summary]),
+    );
+
+    return salons.map((salon) => {
+      const summary = summaryBySalonId.get(salon.id);
+
+      return {
+        ...salon,
+        averageRating: summary?._avg.rating ?? null,
+        ratingCount: summary?._count._all ?? 0,
+      };
     });
   },
 
@@ -211,7 +234,17 @@ export const salonService = {
       throw new AppError(404, "SALON_NOT_FOUND", "Salon not found");
     }
 
-    return salon;
+    const ratingSummary = await prisma.salonRating.aggregate({
+      where: { salonId: salon.id },
+      _avg: { rating: true },
+      _count: { _all: true },
+    });
+
+    return {
+      ...salon,
+      averageRating: ratingSummary._avg.rating ?? null,
+      ratingCount: ratingSummary._count._all,
+    };
   },
 
   async updateCapacity(ownerId: string, id: string, capacity: number) {
