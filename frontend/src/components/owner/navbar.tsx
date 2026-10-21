@@ -28,13 +28,13 @@ export function OwnerNavbar() {
   }
 
   return (
-    <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur">
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-5 sm:px-8">
+    <header className="sticky top-0 z-40 border-b bg-background/90 shadow-sm shadow-black/[0.02] backdrop-blur-xl">
+      <div className="mx-auto flex min-h-16 max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-8">
         <Link
           href="/owner/dashboard"
           className="flex shrink-0 items-center gap-2"
         >
-          <span className="flex size-9 items-center justify-center rounded-xl bg-violet-600 text-white">
+          <span className="flex size-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm shadow-violet-900/15">
             <Scissors className="size-5" />
           </span>
           <span className="text-xl font-bold tracking-tight">snipr</span>
@@ -43,7 +43,7 @@ export function OwnerNavbar() {
           </span>
         </Link>
 
-        <nav className="flex items-center gap-1">
+        <nav className="flex flex-wrap items-center justify-end gap-1">
           {links.map(({ href, label, icon: Icon }) => {
             const active = pathname === href || pathname.startsWith(`${href}/`);
 

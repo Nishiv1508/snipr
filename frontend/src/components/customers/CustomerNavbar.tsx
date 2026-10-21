@@ -23,13 +23,13 @@ export default function CustomerNavbar() {
   const isBookingsPage = pathname === "/customer/bookings";
 
   return (
-    <nav className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur">
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5 sm:px-8">
+    <nav className="sticky top-0 z-50 border-b bg-background/90 shadow-sm shadow-black/[0.02] backdrop-blur-xl">
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-8">
         <Link
           href="/customer/salons"
           className="flex shrink-0 items-center gap-2"
         >
-          <div className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+          <div className="flex size-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm shadow-violet-900/15">
             <Scissors className="size-5" />
           </div>
 
@@ -54,6 +54,7 @@ export default function CustomerNavbar() {
               aria-label="My bookings"
               aria-current={isBookingsPage ? "page" : undefined}
             >
+              <span className="sm:hidden">Bookings</span>
               <span className="hidden sm:inline">My Bookings</span>
             </Link>
           </Button>
