@@ -48,13 +48,39 @@ export class AuthController {
       const { email, password, role } = req.body;
       const result = await authService.register(email, password, role);
 
+      // Remove any stale authentication or challenge cookies.
       clearAuthCookies(res);
+
+      if (result.flow === "setup_required") {
+        // Allow the newly registered owner to set up 2FA immediately.
+        setTemporaryCookie(
+          res,
+          SETUP_COOKIE,
+          result.temporaryToken,
+          10 * 60 * 1000,
+        );
+
+        res.status(201).json({
+          message: "Registration successful. Authenticator setup required.",
+          data: {
+            user: result.user,
+            setupRequired: true,
+            twoFactorRequired: true,
+          },
+        });
+
+        return;
+      }
+
+      // Customers receive a normal authenticated session.
       setAccessCookie(res, result.accessToken);
       setRefreshCookie(res, result.refreshToken);
 
       res.status(201).json({
         message: "Registration successful",
-        data: { user: result.user },
+        data: {
+          user: result.user,
+        },
       });
     } catch (error) {
       next(error);
