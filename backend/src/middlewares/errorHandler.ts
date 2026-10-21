@@ -25,9 +25,10 @@ export const errorHandler: ErrorRequestHandler = (error, _req, res, _next) => {
     return;
   }
 
-  if (env.NODE_ENV !== "production") {
-    console.error(error);
-  }
+  console.error("[API_ERROR]", {
+    message: error instanceof Error ? error.message : String(error),
+    stack: error instanceof Error ? error.stack : undefined,
+  });
 
   res.status(500).json({
     error: {
