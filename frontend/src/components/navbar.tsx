@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowUpRight, Menu, Scissors } from "lucide-react";
+import { Menu, Scissors } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -22,16 +22,16 @@ const links = [
 export function Navbar() {
   return (
     <header className="sticky top-0 z-50 border-b border-stone-200/70 bg-background/90 backdrop-blur-xl">
-      <nav className="mx-auto flex h-20 max-w-7xl items-center justify-between px-5 sm:px-8">
+      <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5 sm:px-8">
         <Link
           href="/"
           className="flex items-center gap-2.5"
           aria-label="Snipr home"
         >
-          <span className="flex size-10 items-center justify-center rounded-xl bg-violet-700 text-white">
+          <span className="flex size-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm shadow-violet-900/15">
             <Scissors className="size-5" />
           </span>
-          <span className="text-2xl font-semibold tracking-tight">
+          <span className="text-2xl font-bold tracking-tight">
             snipr<span className="text-violet-700">.</span>
           </span>
         </Link>
@@ -52,7 +52,7 @@ export function Navbar() {
           <Button variant="ghost">
             <Link href="/login">Log in</Link>
           </Button>
-          <Button className="rounded-full bg-violet-700 hover:bg-violet-800">
+          <Button className="rounded-full shadow-sm">
             <Link href="/register">Get started</Link>
           </Button>
         </div>
@@ -65,7 +65,7 @@ export function Navbar() {
             >
               <Menu className="size-5" />
             </SheetTrigger>
-            <SheetContent side="right" className="w-75">
+            <SheetContent side="right" className="w-[min(20rem,85vw)]">
               <SheetHeader className="text-left">
                 <SheetTitle className="text-xl">
                   snipr<span className="text-violet-700">.</span>
@@ -89,7 +89,7 @@ export function Navbar() {
                 <Button variant="outline">
                   <Link href="/login">Log in</Link>
                 </Button>
-                <Button className="bg-violet-700 hover:bg-violet-800">
+                <Button className="rounded-full">
                   <Link href="/register">Get started</Link>
                 </Button>
               </div>

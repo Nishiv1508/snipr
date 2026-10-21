@@ -21,21 +21,23 @@ export default function SalonCard({ salon }: SalonCardProps) {
       href={`/customer/salons/${salon.id}`}
       className="group block rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
     >
-      <Card className="h-full overflow-hidden transition-all duration-200 group-hover:-translate-y-1 group-hover:shadow-lg">
+      <Card className="h-full overflow-hidden rounded-2xl border bg-card transition-all duration-200 group-hover:-translate-y-1 group-hover:border-primary/30 group-hover:shadow-lg">
         {salon.imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={salon.imageUrl}
             alt={salon.name}
-            className="h-48 w-full bg-muted object-cover"
+            loading="lazy"
+            decoding="async"
+            className="h-48 w-full bg-muted object-cover transition-transform duration-300 group-hover:scale-[1.02]"
           />
         ) : (
-          <div className="flex h-48 items-center justify-center bg-violet-50 text-violet-700 dark:bg-violet-950/30 dark:text-violet-300">
+          <div className="flex h-48 items-center justify-center bg-gradient-to-br from-violet-100 via-violet-50 to-fuchsia-100 text-violet-700 dark:from-violet-950/50 dark:via-violet-950/30 dark:to-fuchsia-950/40 dark:text-violet-300">
             <Scissors className="size-12" />
           </div>
         )}
 
-        <CardContent className="p-5">
+        <CardContent className="p-5 sm:p-6">
           <h2 className="line-clamp-1 text-xl font-semibold tracking-tight">
             {salon.name}
           </h2>
