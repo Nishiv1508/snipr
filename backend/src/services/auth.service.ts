@@ -8,7 +8,8 @@ import { createTemporaryToken } from "../utils/tokens";
 
 export class AuthService {
   async register(email: string, password: string, role: UserRole) {
-    const existingUser = await userRepository.findByEmail(email);
+    const normalizedEmail = email.trim().toLowerCase();
+    const existingUser = await userRepository.findByEmail(normalizedEmail);
 
     if (existingUser) {
       throw new AppError(
@@ -21,16 +22,39 @@ export class AuthService {
     const passwordHash = await bcrypt.hash(password, 12);
 
     try {
-      const user = await userRepository.create(email, passwordHash, role);
+      const user = await userRepository.create(
+        normalizedEmail,
+        passwordHash,
+        role,
+      );
+
+      const safeUser = {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        totpEnabled: user.totpEnabled,
+      };
+
+      // Owners must complete authenticator setup before receiving
+      // a normal authenticated session.
+      if (user.role === "OWNER") {
+        return {
+          flow: "setup_required" as const,
+          user: safeUser,
+          temporaryToken: createTemporaryToken(user.id, "owner_2fa_setup"),
+        };
+      }
+
+      // Customers receive a normal session immediately.
       const tokens = await sessionService.issue(user.id);
 
       return {
-        user,
+        flow: "authenticated" as const,
+        user: safeUser,
         accessToken: tokens.accessToken,
         refreshToken: tokens.refreshToken,
       };
     } catch (error) {
-      // Handle simultaneous registrations with the same email.
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === "P2002"
