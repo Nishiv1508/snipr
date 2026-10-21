@@ -22,6 +22,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 type SalonService = {
   id: string;
@@ -52,12 +62,29 @@ function getLocalDateValue() {
 }
 
 function formatTime(value: string, timezone = "Asia/Kolkata") {
-  return new Intl.DateTimeFormat("en-IN", {
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true,
-    timeZone: timezone,
-  }).format(new Date(value));
+  // Slot data can briefly be unavailable while the selected date is refreshing.
+  // Never pass an empty or invalid date to Intl.DateTimeFormat.
+  if (!value) return "Time unavailable";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Time unavailable";
+
+  try {
+    return new Intl.DateTimeFormat("en-IN", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+      timeZone: timezone,
+    }).format(date);
+  } catch {
+    // Fall back safely if the API returns an invalid timezone identifier.
+    return new Intl.DateTimeFormat("en-IN", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+      timeZone: "Asia/Kolkata",
+    }).format(date);
+  }
 }
 
 function formatPrice(value: string | number) {
@@ -72,6 +99,7 @@ export default function BookingForm({ salonId, services }: BookingFormProps) {
   const [date, setDate] = useState(getLocalDateValue());
   const [successReference, setSuccessReference] = useState<string | null>(null);
   const [requestError, setRequestError] = useState<string | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const form = useForm<BookingFormValues>({
     defaultValues: {
@@ -476,7 +504,8 @@ export default function BookingForm({ salonId, services }: BookingFormProps) {
           </div>
 
           <Button
-            type="submit"
+            type="button"
+            onClick={() => setConfirmOpen(true)}
             size="lg"
             className="w-full bg-violet-600 hover:bg-violet-700"
             disabled={
@@ -499,6 +528,72 @@ export default function BookingForm({ salonId, services }: BookingFormProps) {
             Your appointment is confirmed only after the booking request
             succeeds.
           </p>
+
+          <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+            <AlertDialogContent className="w-[calc(100%-2rem)] rounded-2xl sm:max-w-md">
+              <AlertDialogHeader>
+                <AlertDialogTitle>Place booking?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Please review your appointment details before confirming.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+
+              <div className="space-y-3 rounded-xl border bg-muted/30 p-4 text-sm">
+                <div className="flex items-start justify-between gap-4">
+                  <span className="text-muted-foreground">Date</span>
+                  <span className="text-right font-medium">
+                    {new Date(`${date}T00:00:00`).toLocaleDateString("en-IN", {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                    })}
+                  </span>
+                </div>
+                <div className="flex items-start justify-between gap-4">
+                  <span className="text-muted-foreground">Time</span>
+                  <span className="text-right font-medium">
+                    {formatTime(
+                      slots.find((slot) => slot.id === selectedSlotId)
+                        ?.startsAt ?? "",
+                      timezone,
+                    )}
+                  </span>
+                </div>
+                <div className="space-y-1">
+                  <span className="text-muted-foreground">Services</span>
+                  {selectedServices.map((service) => (
+                    <div key={service.id} className="font-medium">
+                      {service.name}
+                    </div>
+                  ))}
+                </div>
+                <Separator />
+                <div className="flex items-center justify-between gap-4">
+                  <span className="text-muted-foreground">Total amount</span>
+                  <span className="text-lg font-semibold">
+                    {formatPrice(totalPrice)}
+                  </span>
+                </div>
+              </div>
+
+              <AlertDialogFooter className="flex-col-reverse gap-2 sm:flex-row sm:gap-0">
+                <AlertDialogCancel className="mt-0">Go back</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={(event) => {
+                    event.preventDefault();
+                    setConfirmOpen(false);
+                    void form.handleSubmit(onSubmit)();
+                  }}
+                  disabled={createBookingMutation.isPending}
+                  className="bg-violet-600 hover:bg-violet-700"
+                >
+                  {createBookingMutation.isPending
+                    ? "Placing booking…"
+                    : "Yes, place booking"}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </form>
       </CardContent>
     </Card>
