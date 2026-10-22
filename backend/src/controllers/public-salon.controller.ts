@@ -8,9 +8,28 @@ export async function listPublicSalons(
   next: NextFunction,
 ) {
   try {
-    const city =
-      typeof req.query.city === "string" ? req.query.city : undefined;
+    const requestedCity =
+      typeof req.query.city === "string" ? req.query.city.trim() : undefined;
+    const allowedCities = ["Ahmedabad", "Mumbai", "Bangalore"] as const;
 
+    if (
+      requestedCity &&
+      !allowedCities.some(
+        (city) => city.toLowerCase() === requestedCity.toLowerCase(),
+      )
+    ) {
+      throw new AppError(
+        400,
+        "INVALID_CITY",
+        "City must be Ahmedabad, Mumbai, or Bangalore",
+      );
+    }
+
+    const city = requestedCity
+      ? allowedCities.find(
+          (item) => item.toLowerCase() === requestedCity.toLowerCase(),
+        )
+      : undefined;
     const salons = await salonService.listPublic(city);
     res.json({ data: salons });
   } catch (error) {
