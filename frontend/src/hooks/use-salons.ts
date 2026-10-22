@@ -13,6 +13,7 @@ import {
   getPublicSalonById,
   type CreateSalonInput,
   type UpdateSalonInput,
+  type SalonCity,
   updateSalonCapacity,
 } from "@/lib/api/salon.api";
 
@@ -24,6 +25,8 @@ export const salonKeys = {
 
 export const publicSalonKeys = {
   all: ["public-salons"] as const,
+  list: (city?: SalonCity) =>
+    [...publicSalonKeys.all, "list", city ?? "ALL"] as const,
   detail: (id: string) => ["public-salons", id] as const,
 };
 
@@ -105,10 +108,10 @@ export function useUnpublishSalon() {
   });
 }
 
-export function usePublicSalons() {
+export function usePublicSalons(city?: SalonCity) {
   return useQuery({
-    queryKey: publicSalonKeys.all,
-    queryFn: getPublicSalons,
+    queryKey: publicSalonKeys.list(city),
+    queryFn: () => getPublicSalons(city),
   });
 }
 

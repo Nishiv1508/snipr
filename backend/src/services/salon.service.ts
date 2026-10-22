@@ -249,11 +249,24 @@ export const salonService = {
   },
 
   async listPublic(city?: string) {
+    const where: Prisma.SalonWhereInput = {
+      status: SalonStatus.PUBLISHED,
+    };
+
+    if (city) {
+      if (city.toLowerCase() === "bangalore") {
+        // Support both common city names used in existing salon records.
+        where.OR = [
+          { city: { equals: "Bangalore", mode: "insensitive" } },
+          { city: { equals: "Bengaluru", mode: "insensitive" } },
+        ];
+      } else {
+        where.city = { equals: city, mode: "insensitive" };
+      }
+    }
+
     const salons = await prisma.salon.findMany({
-      where: {
-        status: SalonStatus.PUBLISHED,
-        ...(city ? { city: { equals: city, mode: "insensitive" } } : {}),
-      },
+      where,
       include: {
         services: { where: { isActive: true } },
         hours: true,
