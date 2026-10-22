@@ -81,6 +81,15 @@ function getStatusVariant(status: BookingStatus) {
   }
 }
 
+function getTodayDateFilter() {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Kolkata",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+}
+
 const filters: { label: string; value: StatusFilter }[] = [
   { label: "All bookings", value: "ALL" },
   { label: "Confirmed", value: "CONFIRMED" },
@@ -101,7 +110,7 @@ export default function OwnerBookingsPage() {
   const [verificationResults, setVerificationResults] = useState<
     Record<string, string>
   >({});
-  const [dateFilter, setDateFilter] = useState("");
+  const [dateFilter, setDateFilter] = useState(getTodayDateFilter);
   const [showTicketKey, setShowTicketKey] = useState<Record<string, boolean>>(
     {},
   );
@@ -137,6 +146,23 @@ export default function OwnerBookingsPage() {
     ],
     [bookings],
   );
+
+  const dateBookings = useMemo(() => {
+    if (!dateFilter) return bookings;
+
+    return bookings.filter((booking) =>
+      booking.items.some((item) => {
+        const appointmentDate = new Intl.DateTimeFormat("en-CA", {
+          timeZone: "Asia/Kolkata",
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+        }).format(new Date(item.startsAt));
+
+        return appointmentDate === dateFilter;
+      }),
+    );
+  }, [bookings, dateFilter]);
 
   const filteredBookings = useMemo(() => {
     const normalizedSearch = search.trim().toLowerCase();
@@ -360,8 +386,10 @@ export default function OwnerBookingsPage() {
                 {filter.label}
                 <span className="ml-1 opacity-75">
                   {filter.value === "ALL"
-                    ? bookings.length
-                    : bookings.filter((b) => b.status === filter.value).length}
+                    ? dateBookings.length
+                    : dateBookings.filter(
+                        (booking) => booking.status === filter.value,
+                      ).length}
                 </span>
               </Button>
             ))}
@@ -369,17 +397,13 @@ export default function OwnerBookingsPage() {
 
           {(search || dateFilter || statusFilter !== "ALL") && (
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <p className="text-sm text-muted-foreground">
-                Showing {filteredBookings.length} of {bookings.length} bookings
-              </p>
-
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
                 onClick={() => {
                   setSearch("");
-                  setDateFilter("");
+                  setDateFilter(getTodayDateFilter());
                   setStatusFilter("ALL");
                 }}
               >
@@ -427,6 +451,7 @@ export default function OwnerBookingsPage() {
                     className="mt-5"
                     onClick={() => {
                       setSearch("");
+                      setDateFilter(getTodayDateFilter());
                       setStatusFilter("ALL");
                     }}
                   >
