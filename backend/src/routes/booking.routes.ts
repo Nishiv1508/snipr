@@ -7,6 +7,7 @@ import {
   createBookingSchema,
   bookingIdSchema,
   verifyTicketSchema,
+  ownerBookingsQuerySchema,
 } from "../validators/booking.validator";
 import {
   createBooking,
@@ -33,7 +34,11 @@ const ownerRouter = Router();
 
 ownerRouter.use(authenticate, requireOwner);
 
-ownerRouter.get("/bookings", listOwnerBookings);
+ownerRouter.get(
+  "/bookings",
+  validate(ownerBookingsQuerySchema),
+  listOwnerBookings,
+);
 
 ownerRouter.post(
   "/bookings/:id/verify",

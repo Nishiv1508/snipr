@@ -98,7 +98,6 @@ const filters: { label: string; value: StatusFilter }[] = [
 ];
 
 export default function OwnerBookingsPage() {
-  const bookingsQuery = useOwnerBookings();
   const verifyMutation = useVerifyBookingTicket();
 
   const [search, setSearch] = useState("");
@@ -114,6 +113,8 @@ export default function OwnerBookingsPage() {
   const [showTicketKey, setShowTicketKey] = useState<Record<string, boolean>>(
     {},
   );
+
+  const bookingsQuery = useOwnerBookings(dateFilter || undefined);
 
   const bookings = (bookingsQuery.data ?? []) as OwnerBooking[];
 
@@ -147,23 +148,6 @@ export default function OwnerBookingsPage() {
     [bookings],
   );
 
-  const dateBookings = useMemo(() => {
-    if (!dateFilter) return bookings;
-
-    return bookings.filter((booking) =>
-      booking.items.some((item) => {
-        const appointmentDate = new Intl.DateTimeFormat("en-CA", {
-          timeZone: "Asia/Kolkata",
-          year: "numeric",
-          month: "2-digit",
-          day: "2-digit",
-        }).format(new Date(item.startsAt));
-
-        return appointmentDate === dateFilter;
-      }),
-    );
-  }, [bookings, dateFilter]);
-
   const filteredBookings = useMemo(() => {
     const normalizedSearch = search.trim().toLowerCase();
 
@@ -180,26 +164,13 @@ export default function OwnerBookingsPage() {
           booking.reference.toLowerCase().includes(normalizedSearch) ||
           customerEmail.toLowerCase().includes(normalizedSearch);
 
-        const matchesDate =
-          !dateFilter ||
-          booking.items.some((item) => {
-            const appointmentDate = new Intl.DateTimeFormat("en-CA", {
-              timeZone: "Asia/Kolkata",
-              year: "numeric",
-              month: "2-digit",
-              day: "2-digit",
-            }).format(new Date(item.startsAt));
-
-            return appointmentDate === dateFilter;
-          });
-
-        return matchesStatus && matchesSearch && matchesDate;
+        return matchesStatus && matchesSearch;
       })
       .sort(
         (a, b) =>
           new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
       );
-  }, [bookings, search, statusFilter, dateFilter]);
+  }, [bookings, search, statusFilter]);
 
   async function handleVerify(bookingId: string) {
     const key = ticketKeys[bookingId]?.trim();
@@ -386,8 +357,8 @@ export default function OwnerBookingsPage() {
                 {filter.label}
                 <span className="ml-1 opacity-75">
                   {filter.value === "ALL"
-                    ? dateBookings.length
-                    : dateBookings.filter(
+                    ? bookings.length
+                    : bookings.filter(
                         (booking) => booking.status === filter.value,
                       ).length}
                 </span>
@@ -403,7 +374,7 @@ export default function OwnerBookingsPage() {
                 size="sm"
                 onClick={() => {
                   setSearch("");
-                  setDateFilter(getTodayDateFilter());
+                  setDateFilter("");
                   setStatusFilter("ALL");
                 }}
               >
@@ -434,24 +405,28 @@ export default function OwnerBookingsPage() {
 
                 <h3 className="text-lg font-semibold">
                   {bookings.length === 0
-                    ? "No bookings yet"
+                    ? dateFilter
+                      ? "No bookings on this date"
+                      : "No bookings yet"
                     : "No matching bookings"}
                 </h3>
 
                 <p className="mt-2 max-w-md text-sm text-muted-foreground">
                   {bookings.length === 0
-                    ? "Customer appointments will appear here when a booking is made."
+                    ? dateFilter
+                      ? "There are no appointments scheduled for the selected date. Choose another date or clear the date filter to view all bookings."
+                      : "Customer appointments will appear here when a booking is made."
                     : "Try changing the status filter or search term."}
                 </p>
 
-                {(search || statusFilter !== "ALL") && (
+                {(search || dateFilter || statusFilter !== "ALL") && (
                   <Button
                     type="button"
                     variant="outline"
                     className="mt-5"
                     onClick={() => {
                       setSearch("");
-                      setDateFilter(getTodayDateFilter());
+                      setDateFilter("");
                       setStatusFilter("ALL");
                     }}
                   >

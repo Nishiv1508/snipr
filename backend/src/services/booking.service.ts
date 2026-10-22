@@ -351,8 +351,23 @@ export const bookingService = {
     };
   },
 
-  async listOwnerBookings(ownerId: string) {
-    return bookingRepository.findOwnerBookings(ownerId);
+  async listOwnerBookings(ownerId: string, dateValue?: string) {
+    if (!dateValue) {
+      return bookingRepository.findOwnerBookings(ownerId);
+    }
+
+    const parsedDate = parseDate(dateValue);
+    const timezone = "Asia/Kolkata";
+    const nextDate = new Date(parsedDate);
+    nextDate.setUTCDate(nextDate.getUTCDate() + 1);
+
+    const startAt = fromZonedTime(`${dateValue}T00:00:00`, timezone);
+    const endAt = fromZonedTime(
+      `${nextDate.toISOString().slice(0, 10)}T00:00:00`,
+      timezone,
+    );
+
+    return bookingRepository.findOwnerBookings(ownerId, startAt, endAt);
   },
 
   async verifyTicket(ownerId: string, bookingId: string, submittedKey: string) {

@@ -45,3 +45,14 @@ export const verifyTicketSchema = z.object({
   }),
   query: z.record(z.string(), z.unknown()).optional(),
 });
+
+export const ownerBookingsQuerySchema = z.object({
+  body: z.record(z.string(), z.unknown()).default({}),
+  params: z.record(z.string(), z.unknown()).optional(),
+  query: z.object({
+    date: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .optional(),
+  }),
+});

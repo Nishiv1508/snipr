@@ -126,7 +126,19 @@ export async function listOwnerBookings(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const bookings = await bookingService.listOwnerBookings(requireUserId(req));
+    const date = req.query.date;
+    if (date !== undefined && typeof date !== "string") {
+      throw new AppError(
+        400,
+        "INVALID_DATE",
+        "Date must use YYYY-MM-DD format",
+      );
+    }
+
+    const bookings = await bookingService.listOwnerBookings(
+      requireUserId(req),
+      date,
+    );
 
     res.status(200).json({ data: bookings });
   } catch (error) {

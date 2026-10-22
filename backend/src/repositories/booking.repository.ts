@@ -411,11 +411,19 @@ export const bookingRepository = {
     });
   },
 
-  findOwnerBookings(ownerId: string) {
+  findOwnerBookings(ownerId: string, startAt?: Date, endAt?: Date) {
     return prisma.booking.findMany({
       where: {
         items: {
           some: {
+            ...(startAt && endAt
+              ? {
+                  startsAt: {
+                    gte: startAt,
+                    lt: endAt,
+                  },
+                }
+              : {}),
             slot: {
               salon: { ownerId },
             },
