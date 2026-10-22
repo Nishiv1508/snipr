@@ -11,12 +11,7 @@ import { OwnerNavbar } from "@/components/owner/navbar";
 import { getApiError } from "@/lib/api";
 import { useSalon, useUpdateSalon } from "@/hooks/use-salons";
 
-import type {
-  Salon,
-  SalonHoursInput,
-  SalonServiceInput,
-  WeekDay,
-} from "@/lib/api/salon.api";
+import type { Salon, SalonHoursInput, WeekDay } from "@/lib/api/salon.api";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -58,6 +53,8 @@ interface SalonFormValues {
 }
 
 interface ServiceDraft {
+  // Keep the database ID for existing services. New drafts have no ID.
+  id?: string;
   name: string;
   description: string;
   durationMin: string;
@@ -101,6 +98,7 @@ function getSalonServices(salon: Salon): ServiceDraft[] {
   }
 
   return salon.services.map((service) => ({
+    id: service.id,
     name: service.name,
     description: service.description ?? "",
     durationMin: String(service.durationMin),
@@ -302,7 +300,8 @@ function EditSalonForm({ salon }: { salon: Salon }) {
       phone: values.phone.trim(),
       googleMapsUrl: values.googleMapsUrl.trim(),
 
-      services: services.map((service): SalonServiceInput => ({
+      services: services.map((service) => ({
+        ...(service.id ? { id: service.id } : {}),
         name: service.name.trim(),
         description: service.description.trim(),
         durationMin: Number(service.durationMin),
