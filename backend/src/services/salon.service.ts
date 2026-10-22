@@ -92,21 +92,24 @@ export const salonService = {
       });
 
       if (services !== undefined) {
+        // Load full existing records so we can reconcile legacy clients that
+        // submit services without IDs. Existing IDs are preferred; otherwise
+        // match by normalized name to avoid duplicating every existing service.
         const existingServices = await tx.salonService.findMany({
           where: { salonId: id },
-          select: { id: true },
         });
+
+        const existingById = new Map(
+          existingServices.map((service) => [service.id, service]),
+        );
+        const validIds = new Set(existingById.keys());
+        const matchedExistingIds = new Set<string>();
 
         const incomingIds = services
           .filter((service: any) => service.id)
           .map((service: any) => service.id as string);
 
-        // Reject IDs that don't belong to this salon.
-        const validIds = existingServices.map((service) => service.id);
-
-        if (
-          incomingIds.some((serviceId: string) => !validIds.includes(serviceId))
-        ) {
+        if (incomingIds.some((serviceId: string) => !validIds.has(serviceId))) {
           throw new AppError(
             400,
             "INVALID_SERVICE",
@@ -114,7 +117,6 @@ export const salonService = {
           );
         }
 
-        // Update existing services and create new ones.
         for (const service of services) {
           const data = {
             name: service.name,
@@ -124,11 +126,29 @@ export const salonService = {
             isActive: service.isActive ?? true,
           };
 
-          if (service.id) {
+          // Prefer an explicit ID. For older clients that don't send IDs,
+          // match an existing service by name, case-insensitively.
+          let existingService = service.id
+            ? existingById.get(service.id)
+            : undefined;
+
+          if (!existingService) {
+            const normalizedName = String(service.name)
+              .trim()
+              .toLocaleLowerCase();
+            existingService = existingServices.find(
+              (candidate) =>
+                !matchedExistingIds.has(candidate.id) &&
+                candidate.name.trim().toLocaleLowerCase() === normalizedName,
+            );
+          }
+
+          if (existingService) {
             await tx.salonService.update({
-              where: { id: service.id },
+              where: { id: existingService.id },
               data,
             });
+            matchedExistingIds.add(existingService.id);
           } else {
             await tx.salonService.create({
               data: {
@@ -139,9 +159,10 @@ export const salonService = {
           }
         }
 
-        // Handle services removed from the submitted list.
+        // Anything not represented in the submitted list is removed.
+        // Keep services with booking history as inactive to preserve references.
         const removedServices = existingServices.filter(
-          (service) => !incomingIds.includes(service.id),
+          (service) => !matchedExistingIds.has(service.id),
         );
 
         for (const service of removedServices) {
@@ -150,7 +171,6 @@ export const salonService = {
           });
 
           if (bookingItemCount > 0) {
-            // Keep historical booking references intact.
             await tx.salonService.update({
               where: { id: service.id },
               data: { isActive: false },

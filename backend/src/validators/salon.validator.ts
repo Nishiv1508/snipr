@@ -14,6 +14,12 @@ const serviceSchema = z.object({
   isActive: z.boolean().optional(),
 });
 
+// Updates must preserve IDs for existing services so the service layer can
+// update them in place instead of treating them as removed and recreating them.
+const updateServiceSchema = serviceSchema.extend({
+  id: uuidSchema.optional(),
+});
+
 const hoursSchema = z
   .object({
     day: z.enum([
@@ -97,7 +103,7 @@ export const updateSalonSchema = z.object({
           schema.optional(),
         ]),
       ),
-      services: z.array(serviceSchema).max(100).optional(),
+      services: z.array(updateServiceSchema).max(100).optional(),
       hours: z.array(hoursSchema).length(7).optional(),
     })
     .strict()
