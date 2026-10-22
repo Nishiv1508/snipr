@@ -1,4 +1,4 @@
-import { api } from "@/lib/api";
+import { api } from "../api";
 
 export type SalonStatus = "DRAFT" | "PUBLISHED" | "UNPUBLISHED";
 
@@ -177,8 +177,14 @@ export async function unpublishSalon(id: string): Promise<void> {
   await api.post(`/salons/${id}/unpublish`);
 }
 
-export async function getPublicSalons(): Promise<PublicSalon[]> {
-  const response = await api.get<{ data: PublicSalon[] }>("/public/salons");
+export type SalonCity = "Ahmedabad" | "Mumbai" | "Bangalore";
+
+export async function getPublicSalons(
+  city?: SalonCity,
+): Promise<PublicSalon[]> {
+  const response = await api.get<{ data: PublicSalon[] }>("/public/salons", {
+    params: city ? { city } : undefined,
+  });
   return response.data.data;
 }
 
