@@ -138,8 +138,10 @@ export async function downloadBookingTicket(bookingId: string): Promise<Blob> {
 
 // ---------- Owner API ----------
 
-export async function getOwnerBookings(): Promise<Booking[]> {
-  const response = await api.get("/owner/bookings");
+export async function getOwnerBookings(date?: string): Promise<Booking[]> {
+  const response = await api.get("/owner/bookings", {
+    params: date ? { date } : undefined,
+  });
 
   return unwrapData<Booking[]>(response.data);
 }
