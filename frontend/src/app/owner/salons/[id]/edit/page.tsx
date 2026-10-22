@@ -53,8 +53,10 @@ interface SalonFormValues {
 }
 
 interface ServiceDraft {
-  // Keep the database ID for existing services. New drafts have no ID.
+  // Database ID for persisted services; absent for new services.
   id?: string;
+  // Stable React key so deleting a row doesn't reuse another row's UI state.
+  clientKey: string;
   name: string;
   description: string;
   durationMin: string;
@@ -69,6 +71,7 @@ interface HoursDraft {
 }
 
 const emptyService = (): ServiceDraft => ({
+  clientKey: crypto.randomUUID(),
   name: "",
   description: "",
   durationMin: "30",
@@ -93,12 +96,19 @@ function getSalonHours(salon: Salon): HoursDraft[] {
 }
 
 function getSalonServices(salon: Salon): ServiceDraft[] {
-  if (!salon.services?.length) {
+  // Inactive services are retained for historical bookings, but must not be
+  // shown in the editable list or submitted as current services.
+  const activeServices = (salon.services ?? []).filter(
+    (service) => service.isActive,
+  );
+
+  if (!activeServices.length) {
     return [emptyService()];
   }
 
-  return salon.services.map((service) => ({
+  return activeServices.map((service) => ({
     id: service.id,
+    clientKey: service.id,
     name: service.name,
     description: service.description ?? "",
     durationMin: String(service.durationMin),
@@ -521,7 +531,10 @@ function EditSalonForm({ salon }: { salon: Salon }) {
 
             <CardContent className="space-y-5">
               {services.map((service, index) => (
-                <div key={index} className="rounded-xl border p-4 sm:p-5">
+                <div
+                  key={service.clientKey}
+                  className="rounded-xl border p-4 sm:p-5"
+                >
                   <div className="mb-4 flex items-center justify-between">
                     <h3 className="font-medium">Service {index + 1}</h3>
 

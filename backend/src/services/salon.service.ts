@@ -34,7 +34,7 @@ function validateHours(
 async function getOwned(ownerId: string, id: string) {
   const salon = await prisma.salon.findFirst({
     where: { id, ownerId },
-    include: { services: true, hours: true },
+    include: { services: { where: { isActive: true } }, hours: true },
   });
 
   if (!salon) {
@@ -65,14 +65,14 @@ export const salonService = {
           create: hours,
         },
       },
-      include: { services: true, hours: true },
+      include: { services: { where: { isActive: true } }, hours: true },
     });
   },
 
   async listMine(ownerId: string) {
     return prisma.salon.findMany({
       where: { ownerId },
-      include: { services: true, hours: true },
+      include: { services: { where: { isActive: true } }, hours: true },
       orderBy: { createdAt: "desc" },
     });
   },
@@ -92,24 +92,32 @@ export const salonService = {
       });
 
       if (services !== undefined) {
-        // Load full existing records so we can reconcile legacy clients that
-        // submit services without IDs. Existing IDs are preferred; otherwise
-        // match by normalized name to avoid duplicating every existing service.
         const existingServices = await tx.salonService.findMany({
           where: { salonId: id },
+          select: { id: true },
         });
 
-        const existingById = new Map(
-          existingServices.map((service) => [service.id, service]),
+        const existingIds = new Set(
+          existingServices.map((service) => service.id),
         );
-        const validIds = new Set(existingById.keys());
-        const matchedExistingIds = new Set<string>();
-
         const incomingIds = services
           .filter((service: any) => service.id)
           .map((service: any) => service.id as string);
 
-        if (incomingIds.some((serviceId: string) => !validIds.has(serviceId))) {
+        // Reject duplicate IDs in the request; otherwise one record could be
+        // processed more than once and make reconciliation ambiguous.
+        if (new Set(incomingIds).size !== incomingIds.length) {
+          throw new AppError(
+            400,
+            "DUPLICATE_SERVICE_IDS",
+            "The same service was submitted more than once",
+          );
+        }
+
+        // Every submitted ID must refer to a service owned by this salon.
+        if (
+          incomingIds.some((serviceId: string) => !existingIds.has(serviceId))
+        ) {
           throw new AppError(
             400,
             "INVALID_SERVICE",
@@ -117,6 +125,8 @@ export const salonService = {
           );
         }
 
+        // Existing records are updated strictly by ID. New rows have no ID.
+        // Do not match by name: names can change and must not determine identity.
         for (const service of services) {
           const data = {
             name: service.name,
@@ -126,29 +136,11 @@ export const salonService = {
             isActive: service.isActive ?? true,
           };
 
-          // Prefer an explicit ID. For older clients that don't send IDs,
-          // match an existing service by name, case-insensitively.
-          let existingService = service.id
-            ? existingById.get(service.id)
-            : undefined;
-
-          if (!existingService) {
-            const normalizedName = String(service.name)
-              .trim()
-              .toLocaleLowerCase();
-            existingService = existingServices.find(
-              (candidate) =>
-                !matchedExistingIds.has(candidate.id) &&
-                candidate.name.trim().toLocaleLowerCase() === normalizedName,
-            );
-          }
-
-          if (existingService) {
+          if (service.id) {
             await tx.salonService.update({
-              where: { id: existingService.id },
+              where: { id: service.id },
               data,
             });
-            matchedExistingIds.add(existingService.id);
           } else {
             await tx.salonService.create({
               data: {
@@ -159,10 +151,11 @@ export const salonService = {
           }
         }
 
-        // Anything not represented in the submitted list is removed.
-        // Keep services with booking history as inactive to preserve references.
+        // Remove only services omitted from the submitted list. Services
+        // referenced by booking history are retained but deactivated.
+        const incomingIdSet = new Set(incomingIds);
         const removedServices = existingServices.filter(
-          (service) => !matchedExistingIds.has(service.id),
+          (service) => !incomingIdSet.has(service.id),
         );
 
         for (const service of removedServices) {
@@ -201,7 +194,7 @@ export const salonService = {
 
       return tx.salon.findUniqueOrThrow({
         where: { id },
-        include: { services: true, hours: true },
+        include: { services: { where: { isActive: true } }, hours: true },
       });
     });
   },
@@ -241,7 +234,7 @@ export const salonService = {
         status: SalonStatus.PUBLISHED,
         publishedAt: new Date(),
       },
-      include: { services: true, hours: true },
+      include: { services: { where: { isActive: true } }, hours: true },
     });
   },
 
@@ -251,7 +244,7 @@ export const salonService = {
     return prisma.salon.update({
       where: { id },
       data: { status: SalonStatus.UNPUBLISHED },
-      include: { services: true, hours: true },
+      include: { services: { where: { isActive: true } }, hours: true },
     });
   },
 

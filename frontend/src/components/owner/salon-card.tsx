@@ -165,7 +165,9 @@ export function SalonCard({
 
         <div className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
           <Scissors className="size-4" />
-          {salon.services?.length ?? 0} services
+          {salon.services?.filter((service) => service.isActive).length ??
+            0}{" "}
+          services
         </div>
 
         {/* Public customer rating summary */}
