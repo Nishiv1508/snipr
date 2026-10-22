@@ -39,7 +39,14 @@ export interface CreateSalonInput {
   hours: SalonHoursInput[];
 }
 
-export type UpdateSalonInput = Partial<CreateSalonInput>;
+export interface SalonServiceUpdateInput extends SalonServiceInput {
+  // Present for existing services; omitted for newly added services.
+  id?: string;
+}
+
+export type UpdateSalonInput = Omit<Partial<CreateSalonInput>, "services"> & {
+  services?: SalonServiceUpdateInput[];
+};
 
 export interface SalonService extends SalonServiceInput {
   id: string;
