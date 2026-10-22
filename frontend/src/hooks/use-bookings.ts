@@ -19,7 +19,8 @@ export const bookingKeys = {
 
   mine: () => [...bookingKeys.all, "mine"] as const,
 
-  owner: () => [...bookingKeys.all, "owner"] as const,
+  owner: (date?: string) =>
+    [...bookingKeys.all, "owner", date ?? "all"] as const,
 
   slots: (salonId: string, date: string) =>
     [...bookingKeys.all, "slots", salonId, date] as const,
@@ -42,10 +43,10 @@ export function useMyBookings() {
   });
 }
 
-export function useOwnerBookings() {
+export function useOwnerBookings(date?: string) {
   return useQuery({
-    queryKey: bookingKeys.owner(),
-    queryFn: getOwnerBookings,
+    queryKey: bookingKeys.owner(date),
+    queryFn: () => getOwnerBookings(date),
   });
 }
 
@@ -66,7 +67,7 @@ export function useCreateBooking() {
           queryKey: [...bookingKeys.all, "slots"],
         }),
         queryClient.invalidateQueries({
-          queryKey: bookingKeys.owner(),
+          queryKey: [...bookingKeys.all, "owner"],
         }),
       ]);
     },
@@ -88,7 +89,7 @@ export function useCancelBooking() {
           queryKey: [...bookingKeys.all, "slots"],
         }),
         queryClient.invalidateQueries({
-          queryKey: bookingKeys.owner(),
+          queryKey: [...bookingKeys.all, "owner"],
         }),
       ]);
     },
@@ -129,7 +130,7 @@ export function useVerifyBookingTicket() {
 
     onSuccess: async () => {
       await queryClient.invalidateQueries({
-        queryKey: bookingKeys.owner(),
+        queryKey: [...bookingKeys.all, "owner"],
       });
     },
   });
