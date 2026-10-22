@@ -9,18 +9,18 @@ export const ratingService = {
       throw new AppError(404, "SALON_NOT_FOUND", "Salon not found");
     }
 
-    // const completedBooking = await ratingRepository.hasCompletedBooking(
-    //   customerId,
-    //   salonId,
-    // );
+    const completedBooking = await ratingRepository.hasCompletedBooking(
+      customerId,
+      salonId,
+    );
 
-    // if (!completedBooking) {
-    //   throw new AppError(
-    //     403,
-    //     "RATING_NOT_ALLOWED",
-    //     "You can rate a salon only after completing a booking there",
-    //   );
-    // }
+    if (!completedBooking) {
+      throw new AppError(
+        403,
+        "RATING_NOT_ALLOWED",
+        "You can rate a salon only after completing a booking there",
+      );
+    }
 
     return ratingRepository.upsertCustomerRating(customerId, salonId, rating);
   },
