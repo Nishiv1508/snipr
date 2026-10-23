@@ -2,7 +2,7 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "functions": {
     "src/server.ts": {
-      "includeFiles": "node_modules/pdfkit/**/*"
+      "includeFiles": "backend/node_modules/pdfkit/js/standard-fonts/**"
     }
   }
 }
